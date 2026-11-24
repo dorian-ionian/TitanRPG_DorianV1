@@ -99,6 +99,47 @@ function PostRender(Canvas C) {
     }
 
     DrawPlayerMasteryTitles(C, FarAwayInv);
+
+    if(ViewportOwner.Actor != None && ViewportOwner.Actor.myHUD != None && ViewportOwner.Actor.myHUD.bShowScoreboard) {
+        DrawScoreboardPetList(C);
+    }
+}
+
+//Summoned monsters have no PlayerReplicationInfo on clients, so the scoreboard
+//cannot list them. Their replicated FriendlyPawnReplicationInfo is listed here
+//while the scoreboard is open.
+function DrawScoreboardPetList(Canvas C) {
+    local int i, Count;
+    local float XL, YL, Y;
+    local array<string> Lines;
+
+    for(i = 0; i < FriendlyPawns.Length; i++) {
+        if(FriendlyPawns[i].bMonster && FriendlyPawns[i].Master != None && FriendlyPawns[i].Pawn != None && FriendlyPawns[i].Pawn.Health > 0) {
+            Lines.Length = Count + 1;
+            Lines[Count] = FriendlyPawns[i].Master.PlayerName$"'s "$FriendlyPawns[i].MonsterDisplayName;
+            Count++;
+        }
+    }
+
+    if(Count == 0) {
+        return;
+    }
+
+    C.Font = ViewportOwner.Actor.myHUD.GetMediumFontFor(C);
+    C.StrLen("Test", XL, YL);
+    Y = 0.5f * C.ClipY + 0.5f * C.ClipY * 0.25f;
+
+    C.Style = 5; //STY_Alpha
+    C.DrawColor = class'HUD'.Default.WhiteColor;
+    C.SetPos(0.25f * C.ClipX, Y);
+    C.DrawText("Summoned Monsters", true);
+    Y += YL;
+
+    for(i = 0; i < Lines.Length; i++) {
+        C.SetPos(0.25f * C.ClipX, Y);
+        C.DrawText(Lines[i], true);
+        Y += YL;
+    }
 }
 
 //Player and bot pawns do not have a FriendlyPawnReplicationInfo, so their
