@@ -443,6 +443,50 @@ function DrawStatusIcon(Canvas Canvas, RPGStatusIcon StatusIcon, float X, float 
 	}
 }
 
+function DrawOwnedMonsterList(Canvas C, float Right, float Top)
+{
+	local FriendlyPawnReplicationInfo FPRI;
+	local string TierText, MonsterName;
+	local float TierXL, XL, YL, X, Y;
+
+	if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None)
+		return;
+
+	C.Font = C.SmallFont;
+	C.FontScaleX = FontScale.X * 0.75f;
+	C.FontScaleY = FontScale.Y * 0.75f;
+	C.Style = 5; //STY_Alpha
+	Y = Top;
+
+	foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
+	{
+		if(!FPRI.bMonster || FPRI.Pawn == None || FPRI.Master != ViewportOwner.Actor.PlayerReplicationInfo)
+			continue;
+
+		TierText = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
+		if(TierText != "")
+			TierText $= " ";
+		MonsterName = FPRI.MonsterDisplayName;
+		if(MonsterName == "")
+			MonsterName = string(FPRI.Pawn.Class.Name);
+
+		C.TextSize(TierText, TierXL, YL);
+		C.TextSize(TierText $ MonsterName, XL, YL);
+		X = Right - XL;
+
+		C.DrawColor = class'Ability_WeaponProficiency'.static.GetTierColor(FPRI.MonsterTier);
+		C.SetPos(X, Y);
+		C.DrawText(TierText);
+		C.DrawColor = WhiteColor;
+		C.SetPos(X + TierXL, Y);
+		C.DrawText(MonsterName);
+		Y += YL + 1;
+	}
+
+	C.FontScaleX = FontScale.X;
+	C.FontScaleY = FontScale.Y;
+}
+
 function UpdateCanvas(Canvas Canvas)
 {
 	local float XL, YL;
@@ -575,6 +619,8 @@ function DrawDamageNumbers(Canvas Canvas)
 function PostRender(Canvas Canvas)
 {
 	local float XL, YL, X, Y, CurrentX, CurrentY, Size, SizeX, Fade, MaxWidth;
+	local float MonsterIconRight, MonsterIconBottom;
+	local bool bMonsterIcon;
 	local int i, n, Row, Cost, Start, Pages, Rows;
 	local string Text;
 	
@@ -743,11 +789,18 @@ function PostRender(Canvas Canvas)
 
 			X = StatusIconPos.X;
 			Y = StatusIconPos.Y;
+			bMonsterIcon = false;
 
 			for(i = 0; i < RPRI.Status.Length; i++)
 			{
 				if(RPRI.Status[i] != None && RPRI.Status[i].IsVisible())
 				{
+					if(RPRI.Status[i].IsA('StatusIcon_Monsters'))
+					{
+						bMonsterIcon = true;
+						MonsterIconRight = X + StatusIconSize.X;
+						MonsterIconBottom = Y + StatusIconSize.Y;
+					}
 					DrawStatusIcon(Canvas, RPRI.Status[i], X, Y, StatusIconSize.X, StatusIconSize.Y);
 					X -= StatusIconSize.X;
 				}
@@ -756,6 +809,11 @@ function PostRender(Canvas Canvas)
 			//Reset
 			Canvas.FontScaleX = FontScale.X;
 			Canvas.FontScaleY = FontScale.Y;
+
+			if(bMonsterIcon)
+			{
+				DrawOwnedMonsterList(Canvas, MonsterIconRight, MonsterIconBottom + 2);
+			}
 		}
 	
 		//Draw artifacts
