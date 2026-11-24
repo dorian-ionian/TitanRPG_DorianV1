@@ -22,6 +22,12 @@ function ModifyPawn(Pawn Other)
 	KillCount = 0; //new spawn
 }
 
+simulated function string DescriptionText()
+{
+	return repl(Super.DescriptionText(), "$1",
+		class'Util'.static.FormatFloat(FMax(float(MaxLevel), BaseDelay) - 1.0));
+}
+
 function bool PreventDeath(Pawn Killed, Controller Killer, class<DamageType> DamageType, vector HitLocation, bool bAlreadyPrevented)
 {
 	local Blast_Ultima UC;
@@ -95,7 +101,7 @@ defaultproperties
 	StatusIconClass=class'StatusIcon_Ultima'
 	
 	AbilityName="Ultima"
-	Description="When you die and you have at least scored one kill in that respective life, you will cause a huge explosion.|Level 1 waits 4 seconds after you died, each higher level wait 1 second less."
+	Description="When you die and you have at least scored one kill in that respective life, you will cause a huge explosion.|Level 1 waits $1 seconds after you died, each higher level wait 1 second less."
 	MaxLevel=5
 	bUseLevelCost=true
 	ForbiddenAbilities(0)=(AbilityClass=class'Ability_UltimaShield',Level=1)
