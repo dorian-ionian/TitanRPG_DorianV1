@@ -470,6 +470,9 @@ function SearchAndDestroyCommand()
 
 function NotifyKilled(Controller Killer, Controller Killed, pawn KilledPawn)
 {
+    if(Killer == Self && FPRI != None)
+        FPRI.AddKill(KilledPawn);
+
     if(Killer == Self || Killer == Master)
         Celebrate();
 
