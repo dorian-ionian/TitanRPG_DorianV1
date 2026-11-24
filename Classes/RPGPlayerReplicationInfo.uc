@@ -980,13 +980,6 @@ simulated event Tick(float dt)
                 UpdateMasteryTier();
                 if(LastPawnWeapon != None) {
                     LastSelectedWeapon.WeaponClass = LastPawnWeapon.class;
-                    
-                    WM = class'RPGWeaponModifier'.static.GetFor(LastPawnWeapon);
-                    if(WM != None) {
-                        LastSelectedWeapon.ModifierClass = WM.class;
-                    } else {
-                        LastSelectedWeapon.ModifierClass = None;
-                    }
                 }
 			}
 		}
@@ -1316,10 +1309,7 @@ function ModifyPlayer(Pawn Other)
 	{
 		for(Inv = Other.Inventory; Inv != None; Inv = Inv.Inventory)
 		{
-			if(
-                Inv.class == LastSelectedWeapon.WeaponClass &&
-                (LastSelectedWeapon.ModifierClass == None || LastSelectedWeapon.ModifierClass.static.GetFor(Weapon(Inv)) != None)
-			)
+			if(Inv.class == LastSelectedWeapon.WeaponClass)
 			{
 				ClientSwitchToWeapon(Weapon(Inv));
 				break;
@@ -1791,8 +1781,6 @@ function LoadData(RPGData Data)
 		LastSelectedPowerupType = class<Powerups>(DynamicLoadObject(DataObject.LSP, class'Class', true));
 	if(DataObject.LSW != "")
 		LastSelectedWeapon.WeaponClass = class<Weapon>(DynamicLoadObject(DataObject.LSW, class'Class', true));
-	if(DataObject.LSM != "")
-		LastSelectedWeapon.ModifierClass = class<RPGWeaponModifier>(DynamicLoadObject(DataObject.LSM, class'Class', true));
 	
 	Abilities.Remove(0, Abilities.Length);
 	
@@ -1873,9 +1861,6 @@ function SaveData()
 	DataObject.LSW = "";
 	if(LastSelectedWeapon.WeaponClass != None)
 		DataObject.LSW = string(LastSelectedWeapon.WeaponClass);
-	DataObject.LSM = "";
-	if(LastSelectedWeapon.ModifierClass != None)
-		DataObject.LSM = string(LastSelectedWeapon.ModifierClass);
 
 	DataObject.AB.Remove(0, DataObject.AB.Length);
 	DataObject.AL.Remove(0, DataObject.AL.Length);
