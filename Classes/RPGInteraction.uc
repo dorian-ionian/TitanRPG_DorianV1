@@ -443,11 +443,25 @@ function DrawStatusIcon(Canvas Canvas, RPGStatusIcon StatusIcon, float X, float 
 	}
 }
 
+//Fills the tier word and name for one of the player's living monsters; false if it should not be listed
+function bool GetOwnedMonsterRow(FriendlyPawnReplicationInfo FPRI, out string TierText, out string MonsterName)
+{
+	if(!FPRI.bMonster || FPRI.Pawn == None || FPRI.Pawn.Health <= 0 || FPRI.Master != ViewportOwner.Actor.PlayerReplicationInfo)
+		return false;
+
+	TierText = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
+	MonsterName = FPRI.MonsterDisplayName;
+	if(MonsterName == "")
+		MonsterName = string(FPRI.Pawn.Class.Name);
+	return MonsterName != "";
+}
+
+//Names share one column; tier words are right-aligned in front of it so the column lines up
 function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 {
 	local FriendlyPawnReplicationInfo FPRI;
 	local string TierText, MonsterName;
-	local float TierXL, XL, YL, X, Y;
+	local float TierXL, NameXL, SpaceXL, MaxTierXL, MaxNameXL, YL, ColX, Y;
 
 	if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None)
 		return;
@@ -456,31 +470,38 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 	C.FontScaleX = FontScale.X * 0.75f;
 	C.FontScaleY = FontScale.Y * 0.75f;
 	C.Style = 5; //STY_Alpha
-	Y = Top;
+
+	C.TextSize(" ", SpaceXL, YL);
 
 	foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
 	{
-		if(!FPRI.bMonster || FPRI.Pawn == None || FPRI.Master != ViewportOwner.Actor.PlayerReplicationInfo)
+		if(!GetOwnedMonsterRow(FPRI, TierText, MonsterName))
 			continue;
-
-		TierText = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
-		if(TierText != "")
-			TierText $= " ";
-		MonsterName = FPRI.MonsterDisplayName;
-		if(MonsterName == "")
-			MonsterName = string(FPRI.Pawn.Class.Name);
-
 		C.TextSize(TierText, TierXL, YL);
-		C.TextSize(TierText $ MonsterName, XL, YL);
-		X = Right - XL;
+		C.TextSize(MonsterName, NameXL, YL);
+		MaxTierXL = FMax(MaxTierXL, TierXL);
+		MaxNameXL = FMax(MaxNameXL, NameXL);
+	}
 
-		C.DrawColor = class'Ability_WeaponProficiency'.static.GetTierColor(FPRI.MonsterTier);
-		C.SetPos(X, Y);
-		C.DrawText(TierText);
-		C.DrawColor = WhiteColor;
-		C.SetPos(X + TierXL, Y);
-		C.DrawText(MonsterName);
-		Y += YL + 1;
+	if(MaxNameXL > 0)
+	{
+		ColX = Right - (MaxTierXL + SpaceXL + MaxNameXL);
+		Y = Top;
+
+		foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
+		{
+			if(!GetOwnedMonsterRow(FPRI, TierText, MonsterName))
+				continue;
+			C.TextSize(TierText, TierXL, YL);
+
+			C.DrawColor = class'Ability_WeaponProficiency'.static.GetTierColor(FPRI.MonsterTier);
+			C.SetPos(ColX + MaxTierXL - TierXL, Y);
+			C.DrawText(TierText);
+			C.DrawColor = WhiteColor;
+			C.SetPos(ColX + MaxTierXL + SpaceXL, Y);
+			C.DrawText(MonsterName);
+			Y += YL + 1;
+		}
 	}
 
 	C.FontScaleX = FontScale.X;
