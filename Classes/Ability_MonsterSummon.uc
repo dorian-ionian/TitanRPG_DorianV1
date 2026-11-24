@@ -9,7 +9,21 @@ var config int DiscoverKills;
 var config int DiscoverCostMin, DiscoverCostMax;
 var config int DiscoverCooldownMin, DiscoverCooldownMax;
 
-//Copies a player's discovered monsters and their cost/cooldown ranges into the summon artifact, most recently discovered first
+//True while the monster class is still listed in FriendlyMonsterPickup.PossibleTypes
+static function bool IsPickupMonster(class<Monster> MonsterClass)
+{
+	local int i;
+
+	for(i = 0; i < class'FriendlyMonsterPickup'.default.PossibleTypes.Length; i++)
+	{
+		if(class'FriendlyMonsterPickup'.default.PossibleTypes[i] == MonsterClass)
+			return true;
+	}
+	return false;
+}
+
+//Copies a player's discovered monsters and their cost/cooldown ranges into the summon artifact, most recently discovered first.
+//Monsters removed from FriendlyMonsterPickup stay in the player's data but are not offered.
 static function FillArtifact(Artifact_SummonMonster Artifact, RPGPlayerReplicationInfo RPRI)
 {
 	local int i, n;
@@ -23,12 +37,15 @@ static function FillArtifact(Artifact_SummonMonster Artifact, RPGPlayerReplicati
 	for(i = 0; i < n; i++)
 	{
 		M.MonsterClass = RPRI.DataObject.DM[n - 1 - i];
+		if(!IsPickupMonster(M.MonsterClass))
+			continue;
+
 		M.DisplayName = RPRI.DataObject.DN[n - 1 - i];
 		M.CostMin = default.DiscoverCostMin;
 		M.CostMax = default.DiscoverCostMax;
 		M.CooldownMin = default.DiscoverCooldownMin;
 		M.CooldownMax = default.DiscoverCooldownMax;
-		Artifact.MonsterTypes[i] = M;
+		Artifact.MonsterTypes[Artifact.MonsterTypes.Length] = M;
 	}
 }
 

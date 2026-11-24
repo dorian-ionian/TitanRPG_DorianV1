@@ -173,7 +173,7 @@ replication
 		MaxMines, MaxTurrets, MaxMonsters, MaxTotems,
         bDiscoMode;
 	reliable if(Role == ROLE_Authority)
-		ClientReceiveMonsterNames, ClientReceiveTierTitles, ClientReceiveWeaponTitles,
+		ClientReceiveMonsterNames, ClientReceiveTierTitles, ClientReceiveWeaponTitles, ClientReceiveFirstTierBonus,
 		ClientReInitMenu, ClientEnableRPGMenu,
 		ClientNotifyExpGain, ClientShowHint,
 		ClientSetName, ClientGameEnded,
@@ -521,6 +521,8 @@ function ServerRequestMonsterNames()
 	WeaponTitleCount = class'Ability_WeaponProficiency'.default.TierTitles.Length;
 	for(i = 0; i < WeaponTitleCount; i += MONSTER_NAME_BATCH)
 		ClientReceiveWeaponTitles(i, class'Ability_WeaponProficiency'.static.PackTierTitles(i, MONSTER_NAME_BATCH));
+
+	ClientReceiveFirstTierBonus(class'Ability_MonsterProficiency'.default.TierHealthBonus[0], class'Ability_MonsterProficiency'.default.TierDamageBonus[0]);
 }
 
 simulated function ClientReceiveMonsterNames(int Start, string Packed)
@@ -536,6 +538,11 @@ simulated function ClientReceiveTierTitles(int Start, string Packed)
 simulated function ClientReceiveWeaponTitles(int Start, string Packed)
 {
 	class'Ability_WeaponProficiency'.static.SetTierTitles(Start, Packed);
+}
+
+simulated function ClientReceiveFirstTierBonus(float Health, float Damage)
+{
+	class'Ability_MonsterProficiency'.static.SetFirstTierBonus(Health, Damage);
 }
 
 simulated function ClientSetup()

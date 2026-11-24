@@ -96,12 +96,23 @@ function AdjustMonsterDamage(out int Damage, Pawn Monster)
 	Damage = int(float(Damage) * Scale);
 }
 
+//Client: stores the server's first-tier bonuses so the description matches the server's config
+static function SetFirstTierBonus(float Health, float Damage)
+{
+	if(default.TierHealthBonus.Length < 1)
+		default.TierHealthBonus.Length = 1;
+	if(default.TierDamageBonus.Length < 1)
+		default.TierDamageBonus.Length = 1;
+	default.TierHealthBonus[0] = Health;
+	default.TierDamageBonus[0] = Damage;
+}
+
 simulated function string DescriptionText()
 {
 	local string S;
 
-	S = repl(Super.DescriptionText(), "$1", string(int(default.TierHealthBonus[0] * 100)));
-	return repl(S, "$2", string(int(default.TierDamageBonus[0] * 100)));
+	S = repl(Super.DescriptionText(), "$1", string(int(default.TierHealthBonus[0] * 100 + 0.5)));
+	return repl(S, "$2", string(int(default.TierDamageBonus[0] * 100 + 0.5)));
 }
 
 defaultproperties
