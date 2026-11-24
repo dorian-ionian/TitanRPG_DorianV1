@@ -22,10 +22,11 @@ auto state Pickup {
         local class<Monster> Type;
         local int Tries;
         local RPGPlayerReplicationInfo RPRI;
+        local array<class<Monster> > Available;
+        local int n;
         
         if(ValidTouch(Other) && PossibleTypes.Length > 0) {
             P = Pawn(Other);
-            Type = PossibleTypes[Rand(PossibleTypes.Length)];
             
             RPRI = class'RPGPlayerReplicationInfo'.static.GetFor(P.Controller);
             
@@ -42,8 +43,14 @@ auto state Pickup {
                 return;
             }
 
-            //Only one monster of each class at a time - don't consume the pickup either
-            if(RPRI != None && RPRI.HasMonsterOfClass(Type))
+            //Only one monster of each class at a time: roll only among classes the player doesn't already have
+            for(n = 0; n < PossibleTypes.Length; n++) {
+                if(RPRI == None || !RPRI.HasMonsterOfClass(PossibleTypes[n]))
+                    Available[Available.Length] = PossibleTypes[n];
+            }
+
+            //Nothing new left for this player - don't consume the pickup either
+            if(Available.Length == 0)
             {
                 if(Level.TimeSeconds - LastLimitMessageTime > 3.0)
                 {
@@ -54,6 +61,8 @@ auto state Pickup {
                 }
                 return;
             }
+
+            Type = Available[Rand(Available.Length)];
             
             while(M == None && Tries < 25) {
                 Tries++;
