@@ -376,7 +376,9 @@ function bool SpawnedByMe(Pawn P)
             return true;
         A = A.Owner;
     }
-    return false;
+
+    //Quake4 Voss spawns its minions with no owner and records itself in MonsterOwner
+    return InStr(P.GetPropertyText("MonsterOwner"), string(Pawn.Name)) >= 0;
 }
 
 function ExecuteWhatToDoNext()
