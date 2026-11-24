@@ -10,6 +10,9 @@ struct MonsterTypeStruct
 };
 var config array<MonsterTypeStruct> MonsterTypes;
 
+//Summoned monsters die of old age after this many minutes (0 = never)
+var config int MonsterLifetimeMinutes;
+
 const MSG_MaxMonsters = 0x1000;
 
 var localized string MsgMaxMonsters, SelectionTitle;
@@ -87,6 +90,8 @@ function Actor SpawnActor(class<Actor> SpawnClass, vector SpawnLoc, rotator Spaw
 		C = Spawn(class'FriendlyMonsterController',,, SpawnLoc, Instigator.Rotation);
 		C.Possess(M);
 		C.SetMaster(Instigator.Controller);
+		if(MonsterLifetimeMinutes > 0)
+			C.OldAgeTime = Level.TimeSeconds + 60.0 * MonsterLifetimeMinutes;
 		
 		if(InstigatorRPRI != None)
 			InstigatorRPRI.AddMonster(M);
@@ -158,6 +163,7 @@ defaultproperties
 {
 	SelectionTitle="Pick a monster to summon:"
 	MsgMaxMonsters="You cannot spawn any more monsters at this time."
+	MonsterLifetimeMinutes=10
 
 	bSelection=true
 

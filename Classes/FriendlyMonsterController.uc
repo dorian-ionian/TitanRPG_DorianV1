@@ -27,6 +27,8 @@ var float MaxSearchingStuckTime;
 
 var float NextMinionSweep;   // throttle for the summoned-minion sweep
 
+var float OldAgeTime;        // Level.TimeSeconds when this summon dies of old age (0 = never)
+
 event PostBeginPlay()
 {
     Super.PostBeginPlay();
@@ -57,6 +59,16 @@ function Possess(Pawn aPawn)
     UpdateMonsterTier();
 
     Enable('NotifyBump');
+}
+
+function BroadcastOldAge()
+{
+    local PlayerReplicationInfo MasterPRI;
+
+    if(Master != None)
+        MasterPRI = Master.PlayerReplicationInfo;
+    if(Level.Game != None)
+        Level.Game.BroadCastLocalized(Self, class'LocalMessage_OldAge', 0, MasterPRI, None, Pawn.Class);
 }
 
 function SetMaster(Controller NewMaster)
@@ -266,6 +278,15 @@ event Tick(float dt) {
                 Pawn.bNoTeamBeacon = true;
             }
         }
+    }
+
+    //summons don't last forever
+    if(OldAgeTime > 0 && Level.TimeSeconds >= OldAgeTime)
+    {
+        OldAgeTime = 0;
+        BroadcastOldAge();
+        Pawn.Suicide();
+        return;
     }
 
     //if I don't have a master or he switched teams, I should die
