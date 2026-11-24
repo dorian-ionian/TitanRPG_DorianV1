@@ -56,6 +56,8 @@ auto state Pickup {
                     C = Spawn(class'FriendlyMonsterController',,, M.Location, M.Rotation);
                     C.Possess(M);
                     C.SetMaster(P.Controller);
+                    if(class'Artifact_SummonMonster'.default.MonsterLifetimeMinutes > 0)
+                        C.OldAgeTime = Level.TimeSeconds + 60.0 * class'Artifact_SummonMonster'.default.MonsterLifetimeMinutes;
                     
                     if(RPRI != None) {
                         RPRI.AddMonster(M); //tracks the monster towards the player's summon limit
