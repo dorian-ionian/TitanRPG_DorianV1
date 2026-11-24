@@ -2,7 +2,7 @@ class FriendlyMonsterPickup extends TournamentPickUp config(TitanRPG) placeable;
 
 var() config array<class<Monster> > PossibleTypes;
 
-var localized string MsgMaxMonsters;
+var localized string MsgMaxMonsters, MsgAlreadySummoned;
 var float LastLimitMessageTime; //throttles the limit message so it doesn't spam every frame
 
 function float DetourWeight(Pawn Other, float PathWeight) {
@@ -38,6 +38,19 @@ auto state Pickup {
                     
                     if(PlayerController(P.Controller) != None)
                         PlayerController(P.Controller).ClientMessage(MsgMaxMonsters);
+                }
+                return;
+            }
+
+            //Only one monster of each class at a time - don't consume the pickup either
+            if(RPRI != None && RPRI.HasMonsterOfClass(Type))
+            {
+                if(Level.TimeSeconds - LastLimitMessageTime > 3.0)
+                {
+                    LastLimitMessageTime = Level.TimeSeconds;
+                    
+                    if(PlayerController(P.Controller) != None)
+                        PlayerController(P.Controller).ClientMessage(MsgAlreadySummoned);
                 }
                 return;
             }
@@ -77,7 +90,7 @@ auto state Pickup {
 defaultproperties {
     PickupMessage="Companion "
     MsgMaxMonsters="You cannot spawn any more monsters at this time."
-    RespawnTime=60
+    MsgAlreadySummoned="You've already summoned one of these."
     MaxDesireability=0.9
     RemoteRole=ROLE_DumbProxy
     AmbientGlow=128

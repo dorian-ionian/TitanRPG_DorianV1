@@ -1368,6 +1368,20 @@ function bool CanSummonMonster()
 	return Monsters.Length < MaxMonsters;
 }
 
+//True if one of this player's living summons is already of exactly this class
+function bool HasMonsterOfClass(class<Monster> MonsterClass)
+{
+	local int x;
+
+	PruneDeadMonsters();
+	for(x = 0; x < Monsters.Length; x++)
+	{
+		if(Monsters[x].Class == MonsterClass)
+			return true;
+	}
+	return false;
+}
+
 function ModifyMonster(Monster M) {
     local int i;
     

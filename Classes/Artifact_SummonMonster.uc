@@ -12,7 +12,7 @@ var config array<MonsterTypeStruct> MonsterTypes;
 
 const MSG_MaxMonsters = 0x1000;
 
-var localized string MsgMaxMonsters, SelectionTitle;
+var localized string MsgMaxMonsters, MsgAlreadySummoned, SelectionTitle;
 
 replication
 {
@@ -67,6 +67,14 @@ function bool CanActivate()
 	if(InstigatorRPRI != None && !InstigatorRPRI.CanSummonMonster())
 	{
 		Msg(MSG_MaxMonsters);
+		return false;
+	}
+
+	//Only one monster of each class at a time; checked after selection so SpawnActorClass is known
+	if(SelectedOption >= 0 && InstigatorRPRI != None && InstigatorRPRI.HasMonsterOfClass(class<Monster>(SpawnActorClass)))
+	{
+		if(PlayerController(Instigator.Controller) != None)
+			PlayerController(Instigator.Controller).ClientMessage(MsgAlreadySummoned);
 		return false;
 	}
 	
@@ -160,6 +168,7 @@ defaultproperties
 {
 	SelectionTitle="Pick a monster to summon:"
 	MsgMaxMonsters="You cannot spawn any more monsters at this time."
+	MsgAlreadySummoned="You've already summoned one of these."
 
 	bSelection=true
 
