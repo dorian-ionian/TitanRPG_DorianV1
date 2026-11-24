@@ -969,13 +969,11 @@ function Timer()
 	InvasionPlayerLevel = PlayerLevel;
 }
 
-//True for pets and summons (player-owned or FriendlyMonsterController).
-//They are exempt from Invasion scaling.
+//True for pets and summons, which are all driven by a FriendlyMonsterController.
+//They are exempt from Invasion scaling. (Don't check Owner: Pawn.PossessedBy
+//sets Owner to the Controller for every possessed monster, wild ones included.)
 final function bool IsFriendlyMonster(Monster M)
 {
-	if(M.Owner != None && M.Owner.IsA('Controller'))
-		return true;
-
 	return M.Controller != None && M.Controller.IsA('FriendlyMonsterController');
 }
 
