@@ -889,6 +889,8 @@ function ValidateData(RPGPlayerReplicationInfo RPRI) {
     }
     
     if(bSave) {
+        //Stats were applied from the saved levels before this check, so recalculate them from the corrected levels
+        RPRI.ModifyStats();
         RPRI.SaveData();
     }
 }
