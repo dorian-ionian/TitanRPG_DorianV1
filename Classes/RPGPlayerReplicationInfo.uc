@@ -1588,6 +1588,10 @@ function ServerRebuildData()
 		DataObject.WK.Length = 0;
 		DataObject.MP.Length = 0;
 		DataObject.MK.Length = 0;
+		DataObject.DM.Length = 0;
+		DataObject.DN.Length = 0;
+		DataObject.CM.Length = 0;
+		DataObject.CK.Length = 0;
 		UpdateMasteryTier();
 		
 		CostLeft = float(RPGMut.RebuildCost);
