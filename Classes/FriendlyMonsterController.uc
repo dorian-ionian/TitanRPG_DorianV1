@@ -328,14 +328,11 @@ event Tick(float dt) {
     }
 }
 
-// A pawn spawned by this friendly monster (as Owner or Instigator) is a
-// summoned minion - remove it and its AI. The monster packs create their
-// minions with Spawn(class, Self), so Owner attribution is reliable;
-// Instigator covers the rest. Pawns under player/bot/friendly control are
-// never touched.
+// A pawn spawned by this friendly monster is a summoned minion - remove it
+// and its AI. Pawns under player/bot/friendly control are never touched.
 function SweepMinions()
 {
-    local Pawn P, Spawner;
+    local Pawn P;
 
     if(Pawn == None || Pawn.bDeleteMe)
         return;
@@ -351,12 +348,7 @@ function SweepMinions()
                 || FriendlyMonsterController(P.Controller) != None)
                 continue;
         }
-        Spawner = None;
-        if(P.Instigator != None)
-            Spawner = P.Instigator;
-        else if(P.Owner != None && Pawn(P.Owner) != None)
-            Spawner = Pawn(P.Owner);
-        if(Spawner != Pawn)
+        if(!SpawnedByMe(P))
             continue;
 
         if(P.Controller != None)
@@ -364,6 +356,27 @@ function SweepMinions()
         P.Destroy();
         log("TitanRPG: removed minion " $ P.Class $ " summoned by friendly " $ Pawn.Class, 'TitanRPG');
     }
+}
+
+// Follows the Owner chain because some monsters spawn their minions from
+// another spawned pawn: an AlienMonsterPack Egg spawns its Facehugger and
+// FacehuggerHusk with itself as Owner.
+function bool SpawnedByMe(Pawn P)
+{
+    local Actor A;
+    local int Depth;
+
+    if(P.Instigator == Pawn)
+        return true;
+
+    A = P.Owner;
+    for(Depth = 0; Depth < 4 && A != None; Depth++)
+    {
+        if(A == Pawn)
+            return true;
+        A = A.Owner;
+    }
+    return false;
 }
 
 function ExecuteWhatToDoNext()
