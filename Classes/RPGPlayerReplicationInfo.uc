@@ -173,7 +173,7 @@ replication
 		MaxMines, MaxTurrets, MaxMonsters, MaxTotems,
         bDiscoMode;
 	reliable if(Role == ROLE_Authority)
-		ClientReceiveMonsterNames, ClientReceiveTierTitles,
+		ClientReceiveMonsterNames, ClientReceiveTierTitles, ClientReceiveWeaponTitles,
 		ClientReInitMenu, ClientEnableRPGMenu,
 		ClientNotifyExpGain, ClientShowHint,
 		ClientSetName, ClientGameEnded,
@@ -505,10 +505,10 @@ simulated event PostNetBeginPlay()
 		ClientSetup(); //try setup. if it fails, it's tried again every tick
 }
 
-//Server: sends the monster name table and the pet tier titles to the requesting client in batches
+//Server: sends the monster name table, pet tier titles and weapon tier titles to the requesting client in batches
 function ServerRequestMonsterNames()
 {
-	local int i, Count, TitleCount;
+	local int i, Count, TitleCount, WeaponTitleCount;
 
 	Count = class'MonsterNameTable'.default.MonsterNames.Length;
 	for(i = 0; i < Count; i += MONSTER_NAME_BATCH)
@@ -517,6 +517,10 @@ function ServerRequestMonsterNames()
 	TitleCount = class'Ability_MonsterProficiency'.default.TierTitles.Length;
 	for(i = 0; i < TitleCount; i += MONSTER_NAME_BATCH)
 		ClientReceiveTierTitles(i, class'Ability_MonsterProficiency'.static.PackTierTitles(i, MONSTER_NAME_BATCH));
+
+	WeaponTitleCount = class'Ability_WeaponProficiency'.default.TierTitles.Length;
+	for(i = 0; i < WeaponTitleCount; i += MONSTER_NAME_BATCH)
+		ClientReceiveWeaponTitles(i, class'Ability_WeaponProficiency'.static.PackTierTitles(i, MONSTER_NAME_BATCH));
 }
 
 simulated function ClientReceiveMonsterNames(int Start, string Packed)
@@ -527,6 +531,11 @@ simulated function ClientReceiveMonsterNames(int Start, string Packed)
 simulated function ClientReceiveTierTitles(int Start, string Packed)
 {
 	class'Ability_MonsterProficiency'.static.SetTierTitles(Start, Packed);
+}
+
+simulated function ClientReceiveWeaponTitles(int Start, string Packed)
+{
+	class'Ability_WeaponProficiency'.static.SetTierTitles(Start, Packed);
 }
 
 simulated function ClientSetup()

@@ -30,6 +30,41 @@ static function color GetTierColor(int Tier)
 	return default.TierColor[Min((Tier + 3) / 4, ArrayCount(default.TierColor) - 1)];
 }
 
+//Server: packs TierTitles[Start..Start+Count-1] as "Title|" entries for ClientReceiveWeaponTitles
+static function string PackTierTitles(int Start, int Count)
+{
+	local int i, End;
+	local string Packed;
+
+	End = Start + Count;
+	if(End > default.TierTitles.Length)
+		End = default.TierTitles.Length;
+
+	for(i = Start; i < End; i++)
+		Packed = Packed $ default.TierTitles[i] $ "|";
+
+	return Packed;
+}
+
+//Client: stores a batch of weapon titles sent by the server, so mastery messages match the server's config
+static function SetTierTitles(int Start, string Packed)
+{
+	local int i, Pos;
+
+	i = Start;
+	while(true)
+	{
+		Pos = InStr(Packed, "|");
+		if(Pos < 0)
+			break;
+		if(default.TierTitles.Length <= i)
+			default.TierTitles.Length = i + 1;
+		default.TierTitles[i] = Left(Packed, Pos);
+		Packed = Mid(Packed, Pos + 1);
+		i++;
+	}
+}
+
 //True if one of the weapon's fire modes deals this damage type (class defaults, so no instance is needed)
 static function bool ClassUsesDamageType(class<Weapon> WClass, class<DamageType> DamageType)
 {
