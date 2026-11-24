@@ -19,7 +19,7 @@ event PreBeginPlay()
 
 defaultproperties
 {
-    bIsSpectator=True
+    bIsSpectator=False
     bBot=True
     bWelcomed=True
     bNetNotify=False
