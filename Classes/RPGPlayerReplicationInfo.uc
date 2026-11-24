@@ -967,17 +967,7 @@ function Timer()
 	local int x;
 	
 	//Clean monsters
-	x = 0;
-	while(x < Monsters.Length)
-	{
-		if(Monsters[x] == None)
-		{
-			NumMonsters--;
-			Monsters.Remove(x, 1);
-		}
-		else
-			x++;
-	}
+	PruneDeadMonsters();
 	
 	//Clean turrets
 	x = 0;
@@ -1326,6 +1316,31 @@ function AddMonster(Monster M) {
     NumMonsters++;
     
     ModifyMonster(M);
+}
+
+//A dead summon stays in Monsters until its body is destroyed, so count it out
+//as soon as it dies. Otherwise it eats into the summon limit.
+function PruneDeadMonsters()
+{
+	local int x;
+
+	x = 0;
+	while(x < Monsters.Length)
+	{
+		if(Monsters[x] == None || Monsters[x].Health <= 0)
+		{
+			NumMonsters--;
+			Monsters.Remove(x, 1);
+		}
+		else
+			x++;
+	}
+}
+
+function bool CanSummonMonster()
+{
+	PruneDeadMonsters();
+	return Monsters.Length < MaxMonsters;
 }
 
 function ModifyMonster(Monster M) {

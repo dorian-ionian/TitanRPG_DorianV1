@@ -30,7 +30,7 @@ auto state Pickup {
             RPRI = class'RPGPlayerReplicationInfo'.static.GetFor(P.Controller);
             
             //Per-player summon limit - don't consume the pickup, but tell the player
-            if(RPRI != None && RPRI.Monsters.Length >= RPRI.MaxMonsters)
+            if(RPRI != None && !RPRI.CanSummonMonster())
             {
                 if(Level.TimeSeconds - LastLimitMessageTime > 3.0)
                 {

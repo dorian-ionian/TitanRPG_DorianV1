@@ -186,6 +186,11 @@ function DrawMonsterBeaconLabel(Canvas C, FriendlyPawnReplicationInfo FPRI, floa
     C.FontScaleY = 1.5f;
     //Bottom edge of the label sits at Y, so measure the real scaled height instead of assuming one
     YL *= 1.5f;
+
+    //A summon spawned right next to the camera projects above or beside the view, so keep the label on screen
+    X = FClamp(X, 0.5f * (OwnerXL + TierXL + MonsterXL) + 4.0f, C.ClipX - 0.5f * (OwnerXL + TierXL + MonsterXL) - 4.0f);
+    Y = FMax(Y, YL + 4.0f);
+
     C.DrawColor = class'HUD'.Default.WhiteColor;
     C.SetPos(X - 0.5f * (OwnerXL + TierXL + MonsterXL), Y - YL);
     C.DrawTextClipped(OwnerText);

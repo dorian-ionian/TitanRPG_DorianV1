@@ -64,7 +64,7 @@ function bool CanActivate()
 	if(!Super.CanActivate())
 		return false;
 	
-	if(InstigatorRPRI.Monsters.Length >= InstigatorRPRI.MaxMonsters)
+	if(InstigatorRPRI != None && !InstigatorRPRI.CanSummonMonster())
 	{
 		Msg(MSG_MaxMonsters);
 		return false;

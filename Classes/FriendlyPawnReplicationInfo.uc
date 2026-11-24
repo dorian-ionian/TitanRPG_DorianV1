@@ -68,6 +68,10 @@ simulated event Tick(float dt)
 
 	if(Role == ROLE_Authority)
 	{
+		//A dead summon's body is removed shortly after it dies
+		if(Pawn != None && Pawn.Health <= 0 && Pawn.LifeSpan == 0)
+			Pawn.LifeSpan = 2.0;
+
 		if(Master == None || Pawn == None || Pawn.Health <= 0)
 			Destroy();
 		else if(bMonster)
