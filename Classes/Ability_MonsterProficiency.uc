@@ -65,8 +65,8 @@ simulated function string DescriptionText()
 {
 	local string S;
 
-	S = repl(Super.DescriptionText(), "$1", string(int(default.TierHealthBonus[0] * 100)));
-	return repl(S, "$2", string(int(default.TierDamageBonus[0] * 100)));
+	S = repl(Super.DescriptionText(), "$1", string(int(default.TierHealthBonus[3] * 100)));
+	return repl(S, "$2", string(int(default.TierDamageBonus[3] * 100)));
 }
 
 defaultproperties

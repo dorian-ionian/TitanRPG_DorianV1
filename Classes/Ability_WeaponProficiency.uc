@@ -24,9 +24,10 @@ var array<WeaponUsage> Usage;
 var class<Weapon> LastWeapon;
 var color TierColor[8];                    //title and announcement color per tier, index 0 = Novice (not config, so it matches on every machine)
 
+//Four sub-tiers (I-IV) share one named tier's color; index 0 = Novice
 static function color GetTierColor(int Tier)
 {
-	return default.TierColor[Min(Tier, ArrayCount(default.TierColor) - 1)];
+	return default.TierColor[Min((Tier + 3) / 4, ArrayCount(default.TierColor) - 1)];
 }
 
 //True if one of the weapon's fire modes deals this damage type (class defaults, so no instance is needed)
