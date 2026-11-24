@@ -50,6 +50,20 @@ function InitFor(RPGPlayerReplicationInfo Whom)
 		RPGMenu_TabPage(Tabs.TabStack[i].MyPanel).RPGMenu = Self;
 		RPGMenu_TabPage(Tabs.TabStack[i].MyPanel).InitMenu();
 	}
+
+	RPRI.RequestProficiencyStats();
+}
+
+//Called when the server sends the proficiency lines; rebuilds only the Character tab
+function RefreshCharacterTab()
+{
+	local int i;
+
+	for(i = 0; i < Tabs.TabStack.Length; i++)
+	{
+		if(RPGMenu_Character(Tabs.TabStack[i].MyPanel) != None)
+			RPGMenu_Character(Tabs.TabStack[i].MyPanel).InitMenu();
+	}
 }
 
 event Closed(GUIComponent Sender, bool bCancelled)

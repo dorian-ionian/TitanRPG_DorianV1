@@ -148,6 +148,17 @@ var RPGMenu Menu;
 
 var int AbilitiesReceived, AbilitiesTotal;
 
+//One weapon or monster proficiency line for the Character tab, filled by the server (client-side copy)
+struct ProficiencyEntry
+{
+	var bool bMonster;
+	var string LabelText;
+	var string TierTitle;
+	var int Kills;
+	var int NextTier; //kills needed for the next tier, -1 at max
+};
+var array<ProficiencyEntry> ProficiencyEntries;
+
 var array<RPGAbility> AllAbilities;
 var array<class<RPGArtifact> > AllArtifacts;
 
@@ -174,6 +185,7 @@ replication
         bDiscoMode;
 	reliable if(Role == ROLE_Authority)
 		ClientReceiveMonsterNames, ClientReceiveTierTitles, ClientReceiveWeaponTitles, ClientReceiveFirstTierBonus,
+		ClientReceiveProficiencyEntry, ClientProficiencyDone,
 		ClientReInitMenu, ClientEnableRPGMenu,
 		ClientNotifyExpGain, ClientShowHint,
 		ClientSetName, ClientGameEnded,
@@ -188,7 +200,7 @@ replication
 		ServerClearArtifactOrder, ServerAddArtifactOrderEntry, ServerSortArtifacts,
 		ServerGetArtifact, ServerActivateArtifact, //moved from TitanPlayerController for better compatibility
 		ServerDestroyTurrets, ServerKillMonsters, ServerDestroyTotems,
-		ServerFavoriteWeapon, ServerCancelCombo, ServerRequestMonsterNames;
+		ServerFavoriteWeapon, ServerCancelCombo, ServerRequestMonsterNames, ServerRequestProficiency;
 }
 
 //Client: set once the local player's names have been requested from the server
@@ -1574,6 +1586,8 @@ function ServerRebuildData()
 		DataObject.AL.Length = 0;
 		DataObject.WP.Length = 0;
 		DataObject.WK.Length = 0;
+		DataObject.MP.Length = 0;
+		DataObject.MK.Length = 0;
 		UpdateMasteryTier();
 		
 		CostLeft = float(RPGMut.RebuildCost);
@@ -2192,6 +2206,108 @@ function int GetWeaponKillsByAlias(string Alias)
 			return DataObject.WK[i];
 	}
 	return 0;
+}
+
+//Client: asks the server for the weapon and monster proficiency lines shown on the Character tab
+simulated function RequestProficiencyStats()
+{
+	ProficiencyEntries.Length = 0;
+	if(Role == ROLE_Authority)
+	{
+		//listen server: the data is already local
+		BuildProficiencyEntries(true);
+		ClientProficiencyDone();
+	}
+	else
+		ServerRequestProficiency();
+}
+
+function ServerRequestProficiency()
+{
+	BuildProficiencyEntries(false);
+	ClientProficiencyDone();
+}
+
+//bDirect = store locally (listen server), otherwise send to the owning client
+function BuildProficiencyEntries(bool bDirect)
+{
+	local int i, Kills, Tier, NextTier;
+	local string Label, Title, OutName;
+	local byte OutTier;
+	local class<Weapon> WeaponClass;
+	local class<Monster> MonsterClass;
+
+	if(DataObject == None)
+		return;
+
+	for(i = 0; i < DataObject.WP.Length; i++)
+	{
+		Kills = DataObject.WK[i];
+		WeaponClass = class<Weapon>(DynamicLoadObject(DataObject.WP[i], class'Class', true));
+		Label = DataObject.WP[i];
+		if(WeaponClass != None && WeaponClass.default.ItemName != "")
+			Label = WeaponClass.default.ItemName;
+
+		GetGunLabel(DataObject.WP[i], Label, OutName, Title, OutTier);
+		Tier = OutTier;
+		NextTier = -1;
+		if(Tier < class'Ability_WeaponProficiency'.default.MasteryTiers.Length)
+			NextTier = class'Ability_WeaponProficiency'.default.MasteryTiers[Tier];
+
+		EmitProficiencyEntry(bDirect, false, OutName, Title, Kills, NextTier);
+	}
+
+	for(i = 0; i < DataObject.MP.Length; i++)
+	{
+		Kills = DataObject.MK[i];
+		MonsterClass = class<Monster>(DynamicLoadObject(DataObject.MP[i], class'Class', true));
+		Label = DataObject.MP[i];
+		if(MonsterClass != None)
+			Label = class'MonsterNameTable'.static.GetDisplayName(MonsterClass);
+
+		Tier = class'Ability_MonsterProficiency'.static.GetMonsterTier(Kills);
+		Title = class'Ability_MonsterProficiency'.static.GetTierTitle(Tier);
+		NextTier = -1;
+		if(Tier < class'Ability_MonsterProficiency'.default.MonsterTiers.Length)
+			NextTier = class'Ability_MonsterProficiency'.default.MonsterTiers[Tier];
+
+		EmitProficiencyEntry(bDirect, true, Label, Title, Kills, NextTier);
+	}
+}
+
+function EmitProficiencyEntry(bool bDirect, bool bMonster, string Label, string Title, int Kills, int NextTier)
+{
+	if(bDirect)
+		AddProficiencyEntry(bMonster, Label, Title, Kills, NextTier);
+	else
+		ClientReceiveProficiencyEntry(bMonster, Label, Title, Kills, NextTier);
+}
+
+simulated function ClientReceiveProficiencyEntry(bool bMonster, string Label, string Title, int Kills, int NextTier)
+{
+	AddProficiencyEntry(bMonster, Label, Title, Kills, NextTier);
+}
+
+simulated function AddProficiencyEntry(bool bMonster, string Label, string Title, int Kills, int NextTier)
+{
+	local int n;
+	local ProficiencyEntry E;
+
+	E.bMonster = bMonster;
+	E.LabelText = Label;
+	E.TierTitle = Title;
+	E.Kills = Kills;
+	E.NextTier = NextTier;
+
+	n = ProficiencyEntries.Length;
+	ProficiencyEntries.Length = n + 1;
+	ProficiencyEntries[n] = E;
+}
+
+simulated function ClientProficiencyDone()
+{
+	if(Menu != None)
+		Menu.RefreshCharacterTab();
 }
 
 simulated function ClientCloseSelection()

@@ -18,7 +18,8 @@ var automated GUIButton btSwitch, btReset, btRemove;
 var localized string Rebuild_Caption, Rebuild_Hint;
 var localized string 
 	Text_CharInfo, Text_Name, Text_Level, Text_Experience,
-	Text_StatPoints, Text_Stats, Text_Abilities, Text_Disabled;
+	Text_StatPoints, Text_Stats, Text_Abilities, Text_Disabled,
+	Text_WeaponProf, Text_MonsterProf, Text_NoProfTier, Text_MaxProfTier;
 
 function InitComponent(GUIController MyController, GUIComponent MyOwner)
 {
@@ -150,6 +151,9 @@ function InitMenu()
 		}
 	}
 	
+	ShowProficiency(false, Text_WeaponProf);
+	ShowProficiency(true, Text_MonsterProf);
+
 	Abilities.SetIndex(OldAbilityListIndex);
 	Abilities.SetTopItem(OldAbilityListTop);
 	
@@ -160,6 +164,42 @@ function InitMenu()
 	}
 	
 	FillMyBuildsList();
+}
+
+//Lists the proficiency entries of one kind, e.g. "Veteran (120 / 150)"
+function ShowProficiency(bool bMonster, string Caption)
+{
+	local int i, Count;
+	local string Value;
+
+	for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
+	{
+		if(RPGMenu.RPRI.ProficiencyEntries[i].bMonster == bMonster)
+			Count++;
+	}
+	if(Count == 0)
+		return;
+
+	Add("", "");
+	Add(Caption, "", true);
+
+	for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
+	{
+		if(RPGMenu.RPRI.ProficiencyEntries[i].bMonster != bMonster)
+			continue;
+
+		Value = RPGMenu.RPRI.ProficiencyEntries[i].TierTitle;
+		if(Value == "")
+			Value = Text_NoProfTier;
+
+		Value = Value @ "(" $ string(RPGMenu.RPRI.ProficiencyEntries[i].Kills);
+		if(RPGMenu.RPRI.ProficiencyEntries[i].NextTier > 0)
+			Value = Value $ " / " $ string(RPGMenu.RPRI.ProficiencyEntries[i].NextTier) $ ")";
+		else
+			Value = Value $ " kills, " $ Text_MaxProfTier $ ")";
+
+		Add(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Value);
+	}
 }
 
 function bool SwitchClicked(GUIComponent Sender)
@@ -244,6 +284,10 @@ defaultproperties
 	Text_Stats="Stats:"
 	Text_Abilities="Abilities:"
 	Text_Disabled="DISABLED"
+	Text_WeaponProf="Weapon Proficiency:"
+	Text_MonsterProf="Monster Proficiency:"
+	Text_NoProfTier="None"
+	Text_MaxProfTier="max"
 	
 	Rebuild_Caption="Rebuild"
 	Rebuild_Hint="Allows you to rebuild your character at a certain cost of experience.";
