@@ -1,0 +1,87 @@
+class Artifact_Flight extends RPGArtifact;
+
+var Emitter FlightTrail;
+var localized string NotInVehicleMessage;
+
+function BotFightEnemy(Bot Bot)
+{
+	if(!bActive && BotEnemyAbove(Bot, 400, 1500))
+		Activate();
+}
+
+state Activated
+{
+	function BeginState()
+	{
+		Super.BeginState();
+	
+		if (PlayerController(Instigator.Controller) != None)
+			Instigator.Controller.GotoState('PlayerFlying');
+		else
+			Instigator.SetPhysics(PHYS_Flying);
+			
+		FlightTrail = Instigator.spawn(class'FX_Flight', Instigator);
+		SetTimer(0.5, true);
+	}
+
+	function Timer()
+	{
+		if(Bot(Instigator.Controller) != None && !BotEnemyAbove(Bot(Instigator.Controller), 100, 1500))
+			Activate(); //bots land once the enemy is no longer well above them
+	}
+	
+	event Tick(float dt)
+	{
+		if(Instigator.Controller != None)
+		{
+			//Update the state / physics every tick, this allows translocating while flying -pd
+			if (PlayerController(Instigator.Controller) != None && !PlayerController(Instigator.Controller).IsInState('PlayerFlying'))
+				Instigator.Controller.GotoState('PlayerFlying');
+			else
+				Instigator.SetPhysics(PHYS_Flying);
+
+			Super.Tick(dt);
+		}
+	}
+
+	function EndState()
+	{
+		if(Instigator != None && Instigator.Controller != None && Instigator.DrivenVehicle == None)
+		{
+			//water fix - mostly copied from PlayerController.EnterStartState() ~pd
+			if(Instigator.PhysicsVolume.bWaterVolume)
+			{
+				if(Instigator.HeadVolume.bWaterVolume)
+					Instigator.BreathTime = Instigator.UnderWaterTime;
+				
+				Instigator.SetPhysics(PHYS_Swimming);
+				Instigator.Controller.GotoState(Instigator.WaterMovementState);
+			}
+			else
+			{
+				Instigator.SetPhysics(PHYS_Falling);
+				Instigator.Controller.GotoState(Instigator.LandMovementState);
+			}
+		}
+		
+		SetTimer(0, false);
+
+		if(FlightTrail != None)
+			FlightTrail.Kill();
+			
+		Super.EndState();
+	}
+}
+
+defaultproperties
+{
+	MinActivationTime=1.000000
+	bAllowInVehicle=False
+	CostPerSec=4
+	HudColor=(B=255,G=0,R=128)
+	ArtifactID="Flight"
+	Description="Makes you fly."
+	PickupClass=Class'ArtifactPickup_Flight'
+	IconMaterial=Texture'TitanRPG_DorianV1.ArtifactIcons.Flight'
+	ItemName="Flight"
+}
