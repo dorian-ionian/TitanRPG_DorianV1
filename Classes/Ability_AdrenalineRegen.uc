@@ -1,5 +1,19 @@
 class Ability_AdrenalineRegen extends RPGAbility;
 
+//Level lines are rebuilt from the config values so they match ModifyPawn and BonusPerLevel
+simulated function string DescriptionText()
+{
+	local int lv;
+	local string amount;
+
+	amount = class'Util'.static.FormatFloat(BonusPerLevel);
+	LevelDescription.Length = MaxLevel;
+	for(lv = 0; lv < MaxLevel; lv++)
+		LevelDescription[lv] = "At level" @ string(lv + 1) @ "you get" @ amount @ "adrenaline every" @ string(MaxLevel - lv) @ "second(s).";
+
+	return Super.DescriptionText();
+}
+
 function ModifyPawn(Pawn Other)
 {
 	Super.ModifyPawn(Other);
@@ -27,9 +41,6 @@ defaultproperties
 	BonusPerLevel=1
 	AbilityName="Adrenal Drip"
 	Description="Slowly drips adrenaline into your system."
-	LevelDescription(0)="At level 1 you get one adrenaline every 3 seconds."
-	LevelDescription(1)="At level 2 you get one adrenaline every 2 seconds."
-	LevelDescription(2)="At level 3 you get one adrenaline every second."
 	StartingCost=10
 	CostAddPerLevel=5
 	MaxLevel=3
