@@ -15,19 +15,19 @@ var config array<int> MasteryTiers;        //lifetime kills per weapon that reac
 var config array<float> TierDamageBonus;   //damage multiplier bonus with a weapon at each tier
 var config array<string> TierTitles;       //title word shown after the held weapon's name at each tier
 var config string NoviceTitle;             //title word shown after the held weapon's name below the first tier
-var config int MilestonePoints;            //stat points granted once when a weapon reaches a tier
+var config int MilestoneXP;                //XP granted once when a weapon reaches a main tier (every 10th tier)
 var config int VarietyAdrenaline;          //adrenaline for a kill with a different weapon than the last kill
 var config int WeakWeaponBonusKills;       //first kills with a weapon that get the catch-up bonus
 var config int WeakWeaponXP;               //bonus XP per level for each catch-up kill
 
 var array<WeaponUsage> Usage;
 var class<Weapon> LastWeapon;
-var color TierColor[8];                    //title and announcement color per tier, index 0 = Novice (not config, so it matches on every machine)
+var color TierColor[11];                   //title and announcement color per main tier, index 0 = Novice (not config, so it matches on every machine)
 
-//Four sub-tiers (I-IV) share one named tier's color; index 0 = Novice
+//Ten sub-tiers (I-X) share one main tier's color; index 0 = Novice
 static function color GetTierColor(int Tier)
 {
-	return default.TierColor[Min((Tier + 3) / 4, ArrayCount(default.TierColor) - 1)];
+	return default.TierColor[Min((Tier + 9) / 10, ArrayCount(default.TierColor) - 1)];
 }
 
 //Server: packs TierTitles[Start..Start+Count-1] as "Title|" entries for ClientReceiveWeaponTitles
@@ -225,7 +225,7 @@ simulated function string DescriptionText()
 defaultproperties
 {
 	AbilityName="Weapon Proficiency"
-	Description="Weapon mastery: lifetime kills with a weapon raise your damage with it and grant stat points at set milestones. Kills with different weapons within $1 seconds give adrenaline and bonus XP. The first kills with each weapon give $2 bonus XP per level, and repeated kills with one weapon give up to $3 extra XP per level."
+	Description="Weapon mastery: lifetime kills with a weapon raise your damage with it and grant XP at each main tier. Kills with different weapons within $1 seconds give adrenaline and bonus XP. The first kills with each weapon give $2 bonus XP per level, and repeated kills with one weapon give up to $3 extra XP per level."
 	MaxLevel=5
 	StartingCost=5
 	CostAddPerLevel=0
@@ -264,7 +264,10 @@ defaultproperties
 	TierColor(5)=(R=255,G=160,B=40,A=255)
 	TierColor(6)=(R=255,G=60,B=60,A=255)
 	TierColor(7)=(R=255,G=215,B=0,A=255)
-	MilestonePoints=5
+	TierColor(8)=(R=255,G=105,B=180,A=255)
+	TierColor(9)=(R=0,G=200,B=170,A=255)
+	TierColor(10)=(R=255,G=240,B=160,A=255)
+	MilestoneXP=100
 	VarietyAdrenaline=5
 	WeakWeaponBonusKills=5
 	WeakWeaponXP=2

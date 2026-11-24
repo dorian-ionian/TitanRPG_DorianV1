@@ -4,7 +4,7 @@ var config array<int> MonsterTiers;        //lifetime kills per summoned monster
 var config array<float> TierHealthBonus;   //health bonus for newly summoned monsters of that type at each tier
 var config array<float> TierDamageBonus;   //damage multiplier bonus for monsters of that type at each tier
 var config array<string> TierTitles;       //title word shown in the tier announcement
-var config int MilestonePoints;            //stat points granted once when a monster type reaches a tier
+var config int MilestoneXP;                //XP granted once when a monster type reaches a main tier (every 10th tier)
 
 static function int GetMonsterTier(int Kills)
 {
@@ -107,7 +107,7 @@ simulated function string DescriptionText()
 defaultproperties
 {
 	AbilityName="Monster Proficiency"
-	Description="Monster mastery: lifetime kills by your summoned monsters of each type raise newly summoned monsters of that type by $1% health and their damage by $2% at the first tier, with larger bonuses at each higher tier. Milestones grant stat points."
+	Description="Monster mastery: lifetime kills by your summoned monsters of each type raise newly summoned monsters of that type by $1% health and their damage by $2% at the first tier, with larger bonuses at each higher tier. Each main tier grants XP."
 	MaxLevel=1
 	StartingCost=5
 	CostAddPerLevel=0
@@ -139,7 +139,7 @@ defaultproperties
 	TierTitles(4)="Slayer"
 	TierTitles(5)="Reaper"
 	TierTitles(6)="Colossus"
-	MilestonePoints=5
+	MilestoneXP=100
 	RequiredAbilities(0)=(AbilityClass=class'Ability_MonsterSummon',Level=1)
 	Category=class'AbilityCategory_Monsters'
 }

@@ -1872,7 +1872,9 @@ function AddWeaponKill(class<Weapon> WeaponClass)
 		if(Kills != AbilityClass.default.MasteryTiers[t])
 			continue;
 
-		PointsAvailable += AbilityClass.default.MilestonePoints;
+		//first sub-tier of each main tier grants XP
+		if(t % 10 == 0)
+			AwardExperience(float(AbilityClass.default.MilestoneXP));
 		Level.Game.BroadCastLocalized(Self, class'LocalMessage_MasteryTier', t, PRI, None, WeaponClass);
 	}
 
@@ -1916,7 +1918,9 @@ function AddMonsterKill(class<Monster> MonsterClass)
 		if(Kills != AbilityClass.default.MonsterTiers[t])
 			continue;
 
-		PointsAvailable += AbilityClass.default.MilestonePoints;
+		//first sub-tier of each main tier grants XP
+		if(t % 10 == 0)
+			AwardExperience(float(AbilityClass.default.MilestoneXP));
 		Level.Game.BroadCastLocalized(Self, class'LocalMessage_MonsterTier', t, PRI, None, MonsterClass);
 	}
 
