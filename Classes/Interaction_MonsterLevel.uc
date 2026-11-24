@@ -6,6 +6,7 @@
 class Interaction_MonsterLevel extends RPGBaseInteraction;
 
 var Interaction_Awareness AwarenessInteraction;
+var Color RedColor;
 
 //Screen Y of the top edge of the Interaction_Awareness stack for this pawn
 //(health bar, plus the HP text that sits above it). Mirrors that class's geometry.
@@ -117,14 +118,14 @@ function PostRender(Canvas C)
 		if(Text == "")
 			Text = Mid(string(Inv.MyMonster.Class), InStr(string(Inv.MyMonster.Class), ".") + 1);
 
-		C.DrawColor = WhiteColor;
+		C.DrawColor = RedColor;
 		C.StrLen(Text, XL, YL);
 		C.SetPos(ScreenPos.X - 0.5f * XL, ScreenPos.Y - 2.0f * YL);
 		C.DrawText(Text);
 
 		//Level
 		Text = "Level" @ Inv.MonsterLevel;
-		C.DrawColor = TeamBeaconColor[3]; //Gold
+		C.DrawColor = WhiteColor;
 		C.StrLen(Text, XL, YL);
 		C.SetPos(ScreenPos.X - 0.5f * XL, ScreenPos.Y - YL);
 		C.DrawText(Text);
@@ -137,5 +138,6 @@ function PostRender(Canvas C)
 
 defaultproperties
 {
+	RedColor=(R=255,G=64,B=64,A=255)
 	bVisible = true;
 }
