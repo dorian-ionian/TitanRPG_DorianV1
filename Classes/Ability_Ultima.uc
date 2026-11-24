@@ -3,9 +3,10 @@ class Ability_Ultima extends RPGAbility;
 var config float BaseDelay; //should at least be equal to the max level
 var config bool bAllowSuicide; //should Ultima trigger when you killed yourself?
 
-var int KillCount; //Kill count in current spawn
+var config float TryRadiusMin, TryRadiusMax; //if spawning a charger fails, try randomly around the player
+var config int TryCount; //how many random locations to try for the charger
 
-var float TryRadiusMin, TryRadiusMax; //if spawning a charger fails, try randomly around the player
+var int KillCount; //Kill count in current spawn
 
 replication
 {
@@ -61,7 +62,7 @@ function bool PreventDeath(Pawn Killed, Controller Killer, class<DamageType> Dam
 		if(SpawnCharger(Killed.Location) == None)
 		{
 			//Location is blocked by something, try somewhere else
-			for(Tries = 0; Tries < 25; Tries++)
+			for(Tries = 0; Tries < TryCount; Tries++)
 			{
 				TryLocation = Killed.Location +
 					VRand() * (TryRadiusMin + FRand() * (TryRadiusMax - TryRadiusMin));
@@ -116,6 +117,7 @@ defaultproperties
 	
 	TryRadiusMin=32
 	TryRadiusMax=48
+	TryCount=25
 	
 	Category=class'AbilityCategory_Misc'
 }
