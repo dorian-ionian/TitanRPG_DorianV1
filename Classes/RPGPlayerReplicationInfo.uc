@@ -173,7 +173,7 @@ replication
 		MaxMines, MaxTurrets, MaxMonsters, MaxTotems,
         bDiscoMode;
 	reliable if(Role == ROLE_Authority)
-		ClientReceiveMonsterNames,
+		ClientReceiveMonsterNames, ClientReceiveTierTitles,
 		ClientReInitMenu, ClientEnableRPGMenu,
 		ClientNotifyExpGain, ClientShowHint,
 		ClientSetName, ClientGameEnded,
@@ -505,19 +505,28 @@ simulated event PostNetBeginPlay()
 		ClientSetup(); //try setup. if it fails, it's tried again every tick
 }
 
-//Server: sends the monster name table to the requesting client in batches
+//Server: sends the monster name table and the pet tier titles to the requesting client in batches
 function ServerRequestMonsterNames()
 {
-	local int i, Count;
+	local int i, Count, TitleCount;
 
 	Count = class'MonsterNameTable'.default.MonsterNames.Length;
 	for(i = 0; i < Count; i += MONSTER_NAME_BATCH)
 		ClientReceiveMonsterNames(i, class'MonsterNameTable'.static.PackBatch(i, MONSTER_NAME_BATCH));
+
+	TitleCount = class'Ability_MonsterProficiency'.default.TierTitles.Length;
+	for(i = 0; i < TitleCount; i += MONSTER_NAME_BATCH)
+		ClientReceiveTierTitles(i, class'Ability_MonsterProficiency'.static.PackTierTitles(i, MONSTER_NAME_BATCH));
 }
 
 simulated function ClientReceiveMonsterNames(int Start, string Packed)
 {
 	class'MonsterNameTable'.static.SetBatch(Start, Packed);
+}
+
+simulated function ClientReceiveTierTitles(int Start, string Packed)
+{
+	class'Ability_MonsterProficiency'.static.SetTierTitles(Start, Packed);
 }
 
 simulated function ClientSetup()

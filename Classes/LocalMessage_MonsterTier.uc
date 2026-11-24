@@ -55,7 +55,7 @@ static function RenderComplexMessage(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = class'Ability_MonsterProficiency'.Default.TierTitles[Switch];
+	TierTitle = class'Ability_MonsterProficiency'.static.GetTierTitle(Switch + 1);
 	MonsterName = GetMonsterName(class<Monster>(OptionalObject));
 
 	X = Canvas.CurX;
@@ -79,7 +79,7 @@ static function string GetString(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = class'Ability_MonsterProficiency'.Default.TierTitles[Switch];
+	TierTitle = class'Ability_MonsterProficiency'.static.GetTierTitle(Switch + 1);
 	MonsterName = GetMonsterName(class<Monster>(OptionalObject));
 
 	return Name$"'s "$MonsterName$" is now a "$TierTitle$"!";

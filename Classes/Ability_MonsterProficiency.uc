@@ -26,6 +26,41 @@ static function string GetTierTitle(int Tier)
 	return default.TierTitles[Tier - 1];
 }
 
+//Server: packs TierTitles[Start..Start+Count-1] as "Title|" entries for ClientReceiveTierTitles
+static function string PackTierTitles(int Start, int Count)
+{
+	local int i, End;
+	local string Packed;
+
+	End = Start + Count;
+	if(End > default.TierTitles.Length)
+		End = default.TierTitles.Length;
+
+	for(i = Start; i < End; i++)
+		Packed = Packed $ default.TierTitles[i] $ "|";
+
+	return Packed;
+}
+
+//Client: stores a batch of titles sent by the server, so tier words match the server's config
+static function SetTierTitles(int Start, string Packed)
+{
+	local int i, Pos;
+
+	i = Start;
+	while(true)
+	{
+		Pos = InStr(Packed, "|");
+		if(Pos < 0)
+			break;
+		if(default.TierTitles.Length <= i)
+			default.TierTitles.Length = i + 1;
+		default.TierTitles[i] = Left(Packed, Pos);
+		Packed = Mid(Packed, Pos + 1);
+		i++;
+	}
+}
+
 function ModifyMonster(Monster M, Pawn Master)
 {
 	local int Tier;
