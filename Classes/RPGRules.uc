@@ -933,22 +933,18 @@ function int ProcessNetDamage(int OriginalDamage, int Damage, pawn injured, pawn
 	InjuredMonster = GetMonsterPawn(injured);
 	InstigatingMonster = GetMonsterPawn(instigatedBy);
 
-	if(
-		RPGMut.bAutoAdjustInvasionLevel &&
-		RPGMut.InvasionDamageAdjustment > 0 &&
-		(InjuredMonster != None || InstigatingMonster != None)
-	)
+	if(RPGMut.bAutoAdjustInvasionLevel && (InjuredMonster != None || InstigatingMonster != None))
 	{
-		x = float(Damage) * RPGMut.InvasionDamageAdjustment;
+		x = float(Damage);
 		
 		if(InstigatingMonster != None)
-			Damage += x;
+			Damage += x * RPGMut.GetMonsterDamageAdjustment(InstigatingMonster);
 		
 		if(InjuredMonster != None)
 		{
-			Damage -= x;
+			Damage -= x * RPGMut.GetMonsterDamageAdjustment(InjuredMonster);
 			
-			//FIX: safety net - even if the cap in MutTitanRPG.Timer() is
+			//FIX: safety net - even if the cap in MutTitanRPG.GetMonsterDamageAdjustment() is
 			//misconfigured (0 or very high), a monster should never take
 			//zero damage from this adjustment, let alone be healed by it
 			if(Damage <= 0)

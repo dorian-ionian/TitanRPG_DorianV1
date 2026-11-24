@@ -36,9 +36,10 @@ var config array<class<Weapon> > DisallowModifiersFor; //these weapons can not b
 
 //Invasion
 var config bool bAutoAdjustInvasionLevel; //auto adjust invasion monsters' level based on lowest living player
-var config float InvasionAutoAdjustFactor; //affects how dramatically monsters increase in level for each level of the lowest level player
-var float InvasionDamageAdjustment; //calculated from lowest player level and a lot of Mysterial's mojo
-var config float MaxInvasionDamageAdjustment; //hard cap on InvasionDamageAdjustment - monsters can never become undamageable at very high player levels/waves (0 = no cap)
+var config float InvasionAutoAdjustFactorMin; //lowest factor a spawned Invasion monster can roll; affects how dramatically it increases in level per player level
+var config float InvasionAutoAdjustFactorMax; //highest factor a spawned Invasion monster can roll (each monster rolls between Min and Max)
+var int InvasionPlayerLevel; //player level used for auto adjustment, cached in Timer (0 = no adjustment)
+var config float MaxInvasionDamageAdjustment; //hard cap on each monster's damage adjustment - monsters can never become undamageable at very high player levels/waves (0 = no cap)
 var config bool bAverageAllPlayerLevels; //if True, bAutoAdjustInvasionLevel uses the average level of all players instead of the lowest
 var config bool bShowMonsterLevel; //shows a floating label above Invasion monsters with their name and RPG level
 var config bool bFakeBotLevels; //if True, half of the bots are temporary (not saved, level follows their team's humans); if False, all bots are normal
@@ -401,6 +402,10 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 		{
 			Pawn(Other).HealthMax = Pawn(Other).Health; //fix, e.g. to allow healing properly
 			
+			//Each spawned Invasion monster rolls its own auto adjust factor
+			if(Level.Game.IsA('Invasion') && bAutoAdjustInvasionLevel)
+				GetMonsterScale(Monster(Other));
+
 			//Floating name + level labels for Invasion monsters
 			if(bShowMonsterLevel)
 				AddMonsterLevelLabel(Monster(Other));
@@ -961,25 +966,59 @@ function Timer()
 		PlayerLevel = GetEffectivePlayerLevel();
 	}
 		
-	if(PlayerLevel > 0)
+	InvasionPlayerLevel = PlayerLevel;
+}
+
+//Damage adjustment for one Invasion monster, using the factor it rolled at spawn.
+//Returns 0 when there is no player level to adjust from.
+final function float GetMonsterDamageAdjustment(Monster M)
+{
+	local float Adjustment;
+
+	if(M == None || InvasionPlayerLevel <= 0 || Invasion(Level.Game) == None)
+		return 0;
+
+	Adjustment =
+		0.0025f * float(PointsPerLevel) * (
+		2 * (Invasion(Level.Game).WaveNum + 1) +
+		float(InvasionPlayerLevel) * GetMonsterScale(M));
+
+	//FIX: clamp the adjustment. Without a cap, high player levels
+	//(this server has no level cap) or late waves push the factor
+	//past 1.0, at which point the NetDamage subtraction reduces
+	//monster damage to zero or below - making them undamageable
+	//(and beyond 1.0 they would actually HEAL from hits).
+	if(MaxInvasionDamageAdjustment > 0 && Adjustment > MaxInvasionDamageAdjustment)
+		Adjustment = MaxInvasionDamageAdjustment;
+
+	return Adjustment;
+}
+
+//The auto adjust factor a monster rolled when it spawned, between
+//InvasionAutoAdjustFactorMin and InvasionAutoAdjustFactorMax. Monsters
+//that somehow lack a roll get one on first use.
+final function float GetMonsterScale(Monster M)
+{
+	local RPGMonsterScaleInv Inv;
+	local float Lo, Hi;
+
+	Inv = RPGMonsterScaleInv(M.FindInventoryType(class'RPGMonsterScaleInv'));
+	if(Inv == None)
 	{
-		InvasionDamageAdjustment = 
-			0.0025f * float(PointsPerLevel) * (
-			2 * (Invasion(Level.Game).WaveNum + 1) +
-			float(PlayerLevel) * InvasionAutoAdjustFactor);
-			
-			//FIX: clamp the adjustment. Without a cap, high player levels
-			//(this server has no level cap) or late waves push the factor
-			//past 1.0, at which point the NetDamage subtraction reduces
-			//monster damage to zero or below - making them undamageable
-			//(and beyond 1.0 they would actually HEAL from hits).
-			if(MaxInvasionDamageAdjustment > 0 && InvasionDamageAdjustment > MaxInvasionDamageAdjustment)
-				InvasionDamageAdjustment = MaxInvasionDamageAdjustment;
-		}
-	else
-	{
-		InvasionDamageAdjustment = 0;
+		Lo = InvasionAutoAdjustFactorMin;
+		Hi = InvasionAutoAdjustFactorMax;
+		if(Hi < Lo)
+			Hi = Lo;
+
+		Inv = Spawn(class'RPGMonsterScaleInv', M);
+		if(Inv == None)
+			return Lo;
+
+		Inv.Factor = Lo + FRand() * (Hi - Lo);
+		Inv.GiveTo(M);
 	}
+
+	return Inv.Factor;
 }
 
 
@@ -1114,7 +1153,7 @@ final function int CalcPlayerLevel(bool bLivingOnly)
 }
 
 //Returns the RPG level shown above an Invasion monster. Mirrors the level
-//component of the InvasionDamageAdjustment formula so the displayed number
+//component of the monster damage adjustment formula so the displayed number
 //matches how the auto-adjustment scales the monsters.
 final function int GetMonsterLevel(Monster M)
 {
@@ -1126,7 +1165,7 @@ final function int GetMonsterLevel(Monster M)
 	WaveLevel = 2 * (Invasion(Level.Game).WaveNum + 1);
 
 	if(bAutoAdjustInvasionLevel)
-		return int(float(WaveLevel) + float(GetEffectivePlayerLevel()) * InvasionAutoAdjustFactor + 0.5);
+		return int(float(WaveLevel) + float(GetEffectivePlayerLevel()) * GetMonsterScale(M) + 0.5);
 
 	return WaveLevel;
 }
@@ -1726,7 +1765,8 @@ defaultproperties
 	MaxMines=8
     MaxTotems=1
 	bAutoAdjustInvasionLevel=True
-	InvasionAutoAdjustFactor=0.30
+	InvasionAutoAdjustFactorMin=0.25
+	InvasionAutoAdjustFactorMax=1.0
 	bAverageAllPlayerLevels=False
 	bShowMonsterLevel=False
 	bFakeBotLevels=True
