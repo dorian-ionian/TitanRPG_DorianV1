@@ -969,13 +969,23 @@ function Timer()
 	InvasionPlayerLevel = PlayerLevel;
 }
 
+//True for pets and summons (player-owned or FriendlyMonsterController).
+//They are exempt from Invasion scaling.
+final function bool IsFriendlyMonster(Monster M)
+{
+	if(M.Owner != None && M.Owner.IsA('Controller'))
+		return true;
+
+	return M.Controller != None && M.Controller.IsA('FriendlyMonsterController');
+}
+
 //Damage adjustment for one Invasion monster, using the factor it rolled at spawn.
-//Returns 0 when there is no player level to adjust from.
+//Returns 0 when there is no player level to adjust from, or for friendly monsters.
 final function float GetMonsterDamageAdjustment(Monster M)
 {
 	local float Adjustment;
 
-	if(M == None || InvasionPlayerLevel <= 0 || Invasion(Level.Game) == None)
+	if(M == None || InvasionPlayerLevel <= 0 || Invasion(Level.Game) == None || IsFriendlyMonster(M))
 		return 0;
 
 	Adjustment =
@@ -1164,7 +1174,7 @@ final function int GetMonsterLevel(Monster M)
 
 	WaveLevel = 2 * (Invasion(Level.Game).WaveNum + 1);
 
-	if(bAutoAdjustInvasionLevel)
+	if(bAutoAdjustInvasionLevel && !IsFriendlyMonster(M))
 		return int(float(WaveLevel) + float(GetEffectivePlayerLevel()) * GetMonsterScale(M) + 0.5);
 
 	return WaveLevel;
