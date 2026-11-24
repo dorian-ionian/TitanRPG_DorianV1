@@ -123,9 +123,9 @@ static function class<Weapon> DualHandClass(Weapon W, class<DamageType> DamageTy
 	return Left;
 }
 
-function ScoreKill(Controller Killed, class<DamageType> DamageType)
+//G is the gun that dealt the killing blow (RPGRules credits it), not whatever Instigator holds at death
+function ScoreWeaponKill(Controller Killed, class<Weapon> G)
 {
-	local class<Weapon> G;
 	local int i, idx, Recent, Kills;
 	local float Mastery, Variety, Bonus;
 
@@ -133,8 +133,6 @@ function ScoreKill(Controller Killed, class<DamageType> DamageType)
 		return;
 	if(Killed == Instigator.Controller || Killed.SameTeamAs(Instigator.Controller))
 		return;
-
-	G = HitGunClass(Instigator, DamageType);
 	if(G == None)
 		return;
 

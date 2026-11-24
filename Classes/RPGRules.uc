@@ -474,7 +474,11 @@ function ScoreKill(Controller Killer, Controller Killed)
 				//Notify killer's abilities
 				for(x = 0; x < KillerRPRI.Abilities.length; x++)
 				{
-					if(KillerRPRI.Abilities[x].bAllowed)
+					if(!KillerRPRI.Abilities[x].bAllowed)
+						continue;
+					if(Ability_WeaponProficiency(KillerRPRI.Abilities[x]) != None)
+						Ability_WeaponProficiency(KillerRPRI.Abilities[x]).ScoreWeaponKill(Killed, KillCreditWeapon);
+					else
 						KillerRPRI.Abilities[x].ScoreKill(Killed, KillDamageType);
 				}
 			}
