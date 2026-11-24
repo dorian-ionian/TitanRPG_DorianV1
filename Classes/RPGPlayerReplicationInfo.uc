@@ -926,6 +926,10 @@ simulated event Tick(float dt)
 				UpdateMasteryTier();
 		}
 
+		//Remember the selected artifact so it is restored on respawn and saved across map changes
+		if(Controller.Pawn != None && Controller.Pawn.SelectedItem != None)
+			LastSelectedPowerupType = Controller.Pawn.SelectedItem.class;
+
 		//Check weapon
 		if(Controller.Pawn != None && !Controller.Pawn.IsA('Vehicle'))
 		{
@@ -1764,6 +1768,13 @@ function LoadData(RPGData Data)
 	Experience = DataObject.XP;
 	NeededExp = DataObject.XN;
 	UpdateMasteryTier();
+
+	if(DataObject.LSP != "")
+		LastSelectedPowerupType = class<Powerups>(DynamicLoadObject(DataObject.LSP, class'Class', true));
+	if(DataObject.LSW != "")
+		LastSelectedWeapon.WeaponClass = class<Weapon>(DynamicLoadObject(DataObject.LSW, class'Class', true));
+	if(DataObject.LSM != "")
+		LastSelectedWeapon.ModifierClass = class<RPGWeaponModifier>(DynamicLoadObject(DataObject.LSM, class'Class', true));
 	
 	Abilities.Remove(0, Abilities.Length);
 	
@@ -1837,6 +1848,16 @@ function SaveData()
 	DataObject.PA = PointsAvailable;
 	DataObject.XP = Experience;
 	DataObject.XN = NeededExp;
+
+	DataObject.LSP = "";
+	if(LastSelectedPowerupType != None)
+		DataObject.LSP = string(LastSelectedPowerupType);
+	DataObject.LSW = "";
+	if(LastSelectedWeapon.WeaponClass != None)
+		DataObject.LSW = string(LastSelectedWeapon.WeaponClass);
+	DataObject.LSM = "";
+	if(LastSelectedWeapon.ModifierClass != None)
+		DataObject.LSM = string(LastSelectedWeapon.ModifierClass);
 
 	DataObject.AB.Remove(0, DataObject.AB.Length);
 	DataObject.AL.Remove(0, DataObject.AL.Length);
