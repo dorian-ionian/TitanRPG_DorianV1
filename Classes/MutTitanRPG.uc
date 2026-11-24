@@ -70,6 +70,7 @@ var config array<class<Ammunition> > SuperAmmoClasses;
 
 var config int MaxMonsters; //minimum MaxMonsters per player...
 var config bool bMonstersDie; //if True, all monsters summoned by a player die when the player dies
+var config int MonsterLifetimeMinutes; //summoned monsters die of old age after this many minutes (0 = never)
 
 var config int MaxTurrets; //minimum MaxTurrets per player...
 var config bool bTurretsDie; //if True, all turrets built by a player die when the player dies
