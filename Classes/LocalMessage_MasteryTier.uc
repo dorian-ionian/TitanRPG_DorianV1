@@ -55,6 +55,9 @@ static function RenderComplexMessage(
 	TierTitle = MessageString;
 	if(TierTitle == "" && Switch >= 0 && Switch < class'Ability_WeaponProficiency'.Default.TierTitles.Length)
 		TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
+	if(OptionalObject != None)
+		WeaponName = class<Weapon>(OptionalObject).Default.ItemName;
+	X = Canvas.CurX;
 	Y = Canvas.CurY;
 	DrawPart(Canvas, X, Y, Name$Default.IsNowString, BaseColor);
 	DrawPart(Canvas, X, Y, TierTitle, TierCol);
@@ -75,8 +78,11 @@ static function string GetString(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
-	WeaponName = class<Weapon>(OptionalObject).Default.ItemName;
+	TierTitle = "";
+	if(Switch >= 0 && Switch < class'Ability_WeaponProficiency'.Default.TierTitles.Length)
+		TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
+	if(OptionalObject != None)
+		WeaponName = class<Weapon>(OptionalObject).Default.ItemName;
 
 	return Name$Default.IsNowString$TierTitle$Default.WithString$WeaponName$"!";
 }

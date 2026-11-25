@@ -557,6 +557,15 @@ simulated function ClientReceiveFirstTierBonus(float Health, float Damage)
 	class'Ability_MonsterProficiency'.static.SetFirstTierBonus(Health, Damage);
 }
 
+//Package-qualified class name ("Pkg.Class") so the client can DynamicLoadObject it.
+//string(Class) alone is just the bare class name, which does not load.
+static function string QualifiedClassName(Object C)
+{
+	if(C == None)
+		return "";
+	return string(C.Outer.Name) $ "." $ string(C.Name);
+}
+
 //Server: sends a weapon mastery tier-up to every human player. The title comes from the server's ini, so clients never need their own copy.
 function SendMasteryTierMessage(int Switch, class<Weapon> WeaponClass)
 {
@@ -573,7 +582,7 @@ function SendMasteryTierMessage(int Switch, class<Weapon> WeaponClass)
 			continue;
 		RPRI = GetForPRI(C.PlayerReplicationInfo);
 		if(RPRI != None)
-			RPRI.ClientReceiveMasteryTier(Switch, PRI, string(WeaponClass), Title);
+			RPRI.ClientReceiveMasteryTier(Switch, PRI, QualifiedClassName(WeaponClass), Title);
 	}
 }
 
@@ -592,7 +601,7 @@ function SendMonsterTierMessage(int Switch, class<Monster> MonsterClass)
 			continue;
 		RPRI = GetForPRI(C.PlayerReplicationInfo);
 		if(RPRI != None)
-			RPRI.ClientReceiveMonsterTier(Switch, PRI, string(MonsterClass), Title);
+			RPRI.ClientReceiveMonsterTier(Switch, PRI, QualifiedClassName(MonsterClass), Title);
 	}
 }
 

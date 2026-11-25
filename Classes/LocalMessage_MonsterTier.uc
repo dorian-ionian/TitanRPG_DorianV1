@@ -26,6 +26,8 @@ static function DrawPart(Canvas C, out float X, float Y, string Text, color Col)
 
 static function string GetMonsterName(class<Monster> MonsterClass)
 {
+	if(MonsterClass == None)
+		return "monster";
 	return class'MonsterNameTable'.static.GetDisplayName(MonsterClass);
 }
 
