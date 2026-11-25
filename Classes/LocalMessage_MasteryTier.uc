@@ -91,7 +91,7 @@ static function string GetString(
 defaultproperties
 {
 	IsNowString=" is now "
-	WithString=" with "
+	WithString=" with the "
 	bIsSpecial=True
 	bComplexString=True
 	bFadeMessage=True
