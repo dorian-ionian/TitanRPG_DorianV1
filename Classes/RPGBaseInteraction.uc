@@ -19,11 +19,16 @@ var float TeamBeaconMaxDist;
 //Per-player size multiplier for interaction text and bars (set from the Player Preferences menu)
 var float InteractionScale;
 
+//Read from InvasionPro's DorianRPGInvServerSettings.ini; falls back to 1.0 when InvasionPro is not loaded
 function float GetInteractionScale() {
-    local RPGSettings S;
+    local class<Object> C;
+    local Object Obj;
 
-    S = new(None, "TitanRPG") class'RPGSettings';
-    return FClamp(S.InteractionScale, 0.5, 2.0);
+    C = class<Object>(DynamicLoadObject("InvasionProv1_7modV1.DorianRPGInvServerSettings", class'Class', true));
+    if (C == None)
+        return 1.0;
+    Obj = new(None, "DorianRPGInvServerSettings") C;
+    return FClamp(float(Obj.GetPropertyText("InteractionScale")), 0.5, 2.0);
 }
 
 //Gets the team color for a PlayerReplicationInfo
