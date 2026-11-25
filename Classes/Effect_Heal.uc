@@ -80,7 +80,7 @@ defaultproperties
     bAllowOnEnemies=False
 
 	EffectOverlay=Shader'TitanRPG_DorianV1.Overlays.BlueShader'
-	EffectSound=Sound'TitanRPG_DorianV1.SoundEffects.Heal'
+	EffectSound=Sound'PickupSounds.HealthPack'
 	xEmitterClass=class'FX_Heal'
 	
 	EffectMessageClass=class'EffectMessage_Heal'
