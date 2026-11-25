@@ -85,14 +85,6 @@ static function bool ClassUsesDamageType(class<Weapon> WClass, class<DamageType>
 	return false;
 }
 
-//The gun that dealt a hit. Dual wield's container is not a gun, so its hands are checked instead
-function class<Weapon> HitGunClass(Pawn Shooter, class<DamageType> DamageType)
-{
-	if(Shooter == None || Shooter.Weapon == None)
-		return None;
-	return DualHandClass(Shooter.Weapon, DamageType, RPRI);
-}
-
 //Gun credited with a hit by W. A dual wield container is never returned: the hand whose fire mode dealt it is used, or None if neither hand is known
 static function class<Weapon> DualHandClass(Weapon W, class<DamageType> DamageType, RPGPlayerReplicationInfo Stats)
 {
@@ -179,14 +171,15 @@ function ScoreWeaponKill(Controller Killed, class<Weapon> G)
 		RPRI.AwardExperience(Bonus);
 }
 
-function AdjustTargetDamage(out int Damage, int OriginalDamage, Pawn Injured, Pawn InstigatedBy, vector HitLocation, out vector Momentum, class<DamageType> DamageType)
+//Tier damage bonus for HitGun, the gun that dealt the hit (passed in by RPGRules, so the held weapon is never used)
+function AdjustHitDamage(out int Damage, class<Weapon> HitGun)
 {
 	local int Tier;
 
-	if(InstigatedBy == None || InstigatedBy.Weapon == None || RPRI == None)
+	if(HitGun == None || RPRI == None)
 		return;
 
-	Tier = GetMasteryTier(RPRI.GetWeaponKills(HitGunClass(InstigatedBy, DamageType)));
+	Tier = GetMasteryTier(RPRI.GetWeaponKills(HitGun));
 	if(Tier > 0 && Tier <= TierDamageBonus.Length)
 		Damage = int(float(Damage) * (1.0 + TierDamageBonus[Tier - 1]));
 }

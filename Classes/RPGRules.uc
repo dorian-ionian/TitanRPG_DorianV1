@@ -782,6 +782,8 @@ function int ProcessNetDamage(int OriginalDamage, int Damage, pawn injured, pawn
 	local Ability_MonsterProficiency MP;
 	local Inventory Inv;
 	local Weapon W;
+	local class<Weapon> HitGun;
+	local Ability_WeaponProficiency WP;
 	local int x;
 	local bool bFriendlyMonsterProtected;
 	local Monster InjuredMonster, InstigatingMonster;
@@ -966,9 +968,14 @@ function int ProcessNetDamage(int OriginalDamage, int Damage, pawn injured, pawn
 		if(bDamageLog)
 			Log("DamageWeapon =" @ W, 'RPGDamage');
 
+		//The gun that dealt this hit. Proficiency and the killing blow credit it, not whatever is held
+		HitGun = None;
+		if(W != None)
+			HitGun = GetHitWeaponClass(instigatedBy, W, DamageType);
+
 		//Remember the weapon that dealt this hit, so the killing blow credits it instead of whatever is held at death
-		if(W != None && Damage > 0 && !ClassIsChildOf(DamageType, class'RPGDamageType'))
-			RecordLastHit(injured, instigatorController, GetHitWeaponClass(instigatedBy, W, DamageType));
+		if(HitGun != None && Damage > 0 && !ClassIsChildOf(DamageType, class'RPGDamageType'))
+			RecordLastHit(injured, instigatorController, HitGun);
 		
 		//Stock turret shots are credited to their owner, so the owner's held weapon modifier must not apply to them
 		//Countershove/retaliation hits are reflected by a victim's ability, not dealt by the held weapon
@@ -1002,6 +1009,14 @@ function int ProcessNetDamage(int OriginalDamage, int Damage, pawn injured, pawn
 			{
 				if(instigatorRPRI.Abilities[x].bAllowed)
 					instigatorRPRI.Abilities[x].AdjustTargetDamage(Damage, OriginalDamage, injured, instigatedBy, HitLocation, Momentum, DamageType);
+			}
+
+			//Weapon proficiency tier bonus uses the gun that dealt the hit, not the held weapon
+			if(HitGun != None)
+			{
+				WP = Ability_WeaponProficiency(instigatorRPRI.GetOwnedAbility(class'Ability_WeaponProficiency'));
+				if(WP != None)
+					WP.AdjustHitDamage(Damage, HitGun);
 			}
 		}
 	}
