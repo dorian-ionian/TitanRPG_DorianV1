@@ -52,10 +52,9 @@ static function RenderComplexMessage(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
-	WeaponName = class<Weapon>(OptionalObject).Default.ItemName;
-
-	X = Canvas.CurX;
+	TierTitle = MessageString;
+	if(TierTitle == "" && Switch >= 0 && Switch < class'Ability_WeaponProficiency'.Default.TierTitles.Length)
+		TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
 	Y = Canvas.CurY;
 	DrawPart(Canvas, X, Y, Name$Default.IsNowString, BaseColor);
 	DrawPart(Canvas, X, Y, TierTitle, TierCol);

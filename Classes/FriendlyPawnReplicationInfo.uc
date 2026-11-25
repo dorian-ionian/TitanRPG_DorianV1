@@ -7,6 +7,7 @@ var Interaction_Global Interaction; //client
 
 var bool bMonster;      //summoned monster, drawn as "Owner's Tier Monster"
 var int MonsterTier;    //Monster Proficiency tier, 0 = none
+var string MonsterTierTitle; //tier word from the server's ini, resolved on the server
 var string MonsterDisplayName; //from MonsterNameTable, resolved on the server
 
 //Server-only chat: the pet checks in with its owner and announces kills
@@ -23,7 +24,7 @@ replication
 		Master, Pawn;
 
 	reliable if(Role == ROLE_Authority)
-		bMonster, MonsterTier, MonsterDisplayName;
+		bMonster, MonsterTier, MonsterTierTitle, MonsterDisplayName;
 }
 
 event PostBeginPlay()

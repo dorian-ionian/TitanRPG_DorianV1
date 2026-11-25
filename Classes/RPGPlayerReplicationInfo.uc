@@ -193,7 +193,7 @@ replication
 		ClientSwitchToWeapon, //moved from TitanPlayerController for better compatibility
 		ClientCreateStatusIcon, ClientRemoveStatusIcon,
 		ClientShowSelection, ClientCloseSelection, //artifact selection menu
-        ClientSyncProjectile;
+        ClientSyncProjectile, ClientReceiveMasteryTier, ClientReceiveMonsterTier;
 	reliable if(Role < ROLE_Authority)
 		ServerBuyAbility, ServerNoteActivity,
 		ServerSwitchBuild, ServerResetData, ServerRebuildData,
@@ -555,6 +555,65 @@ simulated function ClientReceiveWeaponTitles(int Start, string Packed)
 simulated function ClientReceiveFirstTierBonus(float Health, float Damage)
 {
 	class'Ability_MonsterProficiency'.static.SetFirstTierBonus(Health, Damage);
+}
+
+//Server: sends a weapon mastery tier-up to every human player. The title comes from the server's ini, so clients never need their own copy.
+function SendMasteryTierMessage(int Switch, class<Weapon> WeaponClass)
+{
+	local Controller C;
+	local RPGPlayerReplicationInfo RPRI;
+	local string Title;
+
+	if(Switch >= 0 && Switch < class'Ability_WeaponProficiency'.default.TierTitles.Length)
+		Title = class'Ability_WeaponProficiency'.default.TierTitles[Switch];
+
+	for(C = Level.ControllerList; C != None; C = C.NextController)
+	{
+		if(PlayerController(C) == None || C.PlayerReplicationInfo == None)
+			continue;
+		RPRI = GetForPRI(C.PlayerReplicationInfo);
+		if(RPRI != None)
+			RPRI.ClientReceiveMasteryTier(Switch, PRI, string(WeaponClass), Title);
+	}
+}
+
+//Server: sends a monster proficiency tier-up to every human player, with the title from the server's ini
+function SendMonsterTierMessage(int Switch, class<Monster> MonsterClass)
+{
+	local Controller C;
+	local RPGPlayerReplicationInfo RPRI;
+	local string Title;
+
+	Title = class'Ability_MonsterProficiency'.static.GetTierTitle(Switch + 1);
+
+	for(C = Level.ControllerList; C != None; C = C.NextController)
+	{
+		if(PlayerController(C) == None || C.PlayerReplicationInfo == None)
+			continue;
+		RPRI = GetForPRI(C.PlayerReplicationInfo);
+		if(RPRI != None)
+			RPRI.ClientReceiveMonsterTier(Switch, PRI, string(MonsterClass), Title);
+	}
+}
+
+simulated function ClientReceiveMasteryTier(int Switch, PlayerReplicationInfo EarnerPRI, string WeaponAlias, string Title)
+{
+	local PlayerController PC;
+
+	PC = PlayerController(Owner);
+	if(PC == None || PC.myHUD == None)
+		return;
+	PC.myHUD.LocalizedMessage(class'LocalMessage_MasteryTier', Switch, EarnerPRI, None, DynamicLoadObject(WeaponAlias, class'Class', true), Title);
+}
+
+simulated function ClientReceiveMonsterTier(int Switch, PlayerReplicationInfo EarnerPRI, string MonsterAlias, string Title)
+{
+	local PlayerController PC;
+
+	PC = PlayerController(Owner);
+	if(PC == None || PC.myHUD == None)
+		return;
+	PC.myHUD.LocalizedMessage(class'LocalMessage_MonsterTier', Switch, EarnerPRI, None, DynamicLoadObject(MonsterAlias, class'Class', true), Title);
 }
 
 simulated function ClientSetup()
@@ -1920,7 +1979,7 @@ function AddWeaponKill(class<Weapon> WeaponClass)
 		//first sub-tier of each main tier grants XP
 		if(t % 10 == 0)
 			AwardExperience(float(AbilityClass.default.MilestoneXP));
-		Level.Game.BroadCastLocalized(Self, class'LocalMessage_MasteryTier', t, PRI, None, WeaponClass);
+		SendMasteryTierMessage(t, WeaponClass);
 	}
 
 	UpdateMasteryTier();
@@ -1966,7 +2025,7 @@ function AddMonsterKill(class<Monster> MonsterClass)
 		//first sub-tier of each main tier grants XP
 		if(t % 10 == 0)
 			AwardExperience(float(AbilityClass.default.MilestoneXP));
-		Level.Game.BroadCastLocalized(Self, class'LocalMessage_MonsterTier', t, PRI, None, MonsterClass);
+		SendMonsterTierMessage(t, MonsterClass);
 	}
 
 	SaveData();

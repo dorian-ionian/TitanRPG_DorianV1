@@ -449,7 +449,7 @@ function bool GetOwnedMonsterRow(FriendlyPawnReplicationInfo FPRI, out string Ti
 	if(!FPRI.bMonster || FPRI.Pawn == None || FPRI.Pawn.Health <= 0 || FPRI.Master != ViewportOwner.Actor.PlayerReplicationInfo)
 		return false;
 
-	TierText = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
+	TierText = FPRI.MonsterTierTitle;
 	MonsterName = FPRI.MonsterDisplayName;
 	if(MonsterName == "")
 		MonsterName = string(FPRI.Pawn.Class.Name);

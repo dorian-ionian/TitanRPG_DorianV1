@@ -163,7 +163,7 @@ function DrawMonsterBeaconLabel(Canvas C, FriendlyPawnReplicationInfo FPRI, floa
     }
 
     OwnerText = FPRI.Master.PlayerName $ "'s ";
-    TierText = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
+    TierText = FPRI.MonsterTierTitle;
     if(TierText != "") {
         TierText $= " ";
     }

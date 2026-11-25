@@ -40,7 +40,10 @@ event PostBeginPlay()
 function UpdateMonsterTier()
 {
     if(FPRI != None && MasterRPRI != None && Pawn != None)
+    {
         FPRI.MonsterTier = class'Ability_MonsterProficiency'.static.GetMonsterTier(MasterRPRI.GetMonsterKills(class<Monster>(Pawn.Class)));
+        FPRI.MonsterTierTitle = class'Ability_MonsterProficiency'.static.GetTierTitle(FPRI.MonsterTier);
+    }
 }
 
 function Possess(Pawn aPawn)
