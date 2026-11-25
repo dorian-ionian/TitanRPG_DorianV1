@@ -2,6 +2,7 @@ class Ability_MedicAura extends RPGAbility;
 
 var config float HealInterval;
 var config float HealRadius;
+var Sound HealSound;
 
 replication
 {
@@ -45,6 +46,7 @@ function Timer()
 			if(Heal != None)
 			{
 				Heal.HealAmount = AbilityLevel * int(BonusPerLevel);
+				Heal.EffectSound = HealSound;
 				Heal.Start();
 			
 				HealEmitter = Instigator.Spawn(class'FX_HealingBeam', Instigator);
@@ -64,6 +66,7 @@ defaultproperties
 	BonusPerLevel=1
 	HealRadius=1024.000000
 	HealInterval=1.000000
+	HealSound=Sound'PickupSounds.HealthPack'
 	AbilityName="Convalescing Aura"
 	Description="Heals nearby teammates by $1 health per level per second."
 	StartingCost=10
