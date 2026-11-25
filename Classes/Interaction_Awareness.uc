@@ -43,6 +43,7 @@ function PostRender(Canvas C) {
     local float TextTop;
 
     StackCount = 0;
+    InteractionScale = GetInteractionScale();
 
     if(Ability == None || Ability.AbilityLevel <= 0) {
         return;
@@ -70,7 +71,7 @@ function PostRender(Canvas C) {
             ScreenPos = C.WorldToScreen(P.Location + Height * vect(0, 0, 0.75));
             
             //Bar height
-            Height = SmallFontHeight * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
+            Height = SmallFontHeight * InteractionScale * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
             
             if(P.IsA('Vehicle')) {
                 Height *= 1.75;

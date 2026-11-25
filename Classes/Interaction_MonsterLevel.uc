@@ -19,7 +19,7 @@ function float GetAwarenessTop(Canvas C, Pawn P, float Dist)
 	Height = P.CollisionHeight * FClamp(0.85f + Dist * 0.85f / TeamBeaconMaxDist, 1.1f, 1.75f);
 	AnchorPos = C.WorldToScreen(P.Location + Height * vect(0, 0, 0.75));
 
-	Height = SmallFontHeight * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
+	Height = SmallFontHeight * InteractionScale * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
 	if(P.IsA('Vehicle'))
 		Height *= 1.75;
 	BarH = 2.0f * Height;
@@ -45,6 +45,7 @@ function PostRender(Canvas C)
 	if(ViewportOwner.Actor == None)
 		return;
 
+	InteractionScale = GetInteractionScale();
 	SavedFont = C.Font;
 
 	if(AwarenessInteraction == None)
@@ -105,7 +106,7 @@ function PostRender(Canvas C)
 		C.Style = 9; //STY_AlphaZ
 		//Resolution-scaled font - same as InvasionPro's floating pet
 		//names (UT2003Fonts, which TinyFont also comes from)
-		C.Font = class'UT2MidGameFont'.static.GetMidGameFont(int(C.ClipX));
+		C.Font = class'UT2MidGameFont'.static.GetMidGameFont(int(C.ClipX * InteractionScale));
 		if(C.Font == None)
 			C.Font = C.TinyFont;
 		C.FontScaleX = Scale;

@@ -7,12 +7,14 @@ var config bool bClassicArtifactSelection;
 var config int IconsPerRow;
 var config float IconScale, IconsX, IconsY, IconClassicY, ExpBarX, ExpBarY;
 var config float ExpGainDuration;
+var config float InteractionScale;
 
 var config array<string> MyBuilds;
 
 defaultproperties
 {
 	ExpGainDuration=5.000000
+	InteractionScale=1.000000
 	ExpBarX=0.870000
 	ExpBarY=0.650000
 	bHideWeaponExtra=False

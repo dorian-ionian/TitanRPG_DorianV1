@@ -31,6 +31,7 @@ function PostRender(Canvas C) {
     local xPlayer xPC;
 
     StackCount = 0;
+    InteractionScale = GetInteractionScale();
 
     if(Ability == None || Ability.AbilityLevel <= 0) {
         return;
@@ -97,11 +98,11 @@ function PostRender(Canvas C) {
             
             //Text
             if(Dist < TeamBeaconMaxDist && C.ClipX > 600) {
-                ScreenPos.Y -= SmallFontHeight;
+                ScreenPos.Y -= SmallFontHeight * InteractionScale;
             }
             
             //Bar height
-            Height = SmallFontHeight * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
+            Height = SmallFontHeight * InteractionScale * FClamp(1 - Dist / (TeamBeaconMaxDist / 2), 0.5, 1);
             
             if(P.IsA('Vehicle')) {
                 Height *= 1.75;
@@ -118,7 +119,7 @@ function PostRender(Canvas C) {
                 StackPawn[StackCount] = P;
                 StackTop[StackCount] = ScreenPos.Y;
                 if(Ability.AbilityLevel >= 2) {
-                    StackTop[StackCount] -= 2.0f + 2.0f * SmallFontHeight;
+                    StackTop[StackCount] -= 2.0f + 2.0f * SmallFontHeight * InteractionScale;
                 }
                 StackCount++;
             }

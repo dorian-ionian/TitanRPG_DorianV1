@@ -16,6 +16,16 @@ var Texture HealthBar, HealthBarBorder;
 var Texture TeamBeacon;
 var float TeamBeaconMaxDist;
 
+//Per-player size multiplier for interaction text and bars (set from the Player Preferences menu)
+var float InteractionScale;
+
+function float GetInteractionScale() {
+    local RPGSettings S;
+
+    S = new(None, "TitanRPG") class'RPGSettings';
+    return FClamp(S.InteractionScale, 0.5, 2.0);
+}
+
 //Gets the team color for a PlayerReplicationInfo
 function Color GetTeamBeaconColor(PlayerReplicationInfo PRI) {
     if(PRI.Team != None && PRI.Team.TeamIndex >= 0 && PRI.Team.TeamIndex <= 3) {
@@ -101,13 +111,25 @@ function Color GetHealthColor(float Frac) {
 function float DrawHealthText(Canvas C, float X, float Y, Pawn P) {
     local float XL, YL, Frac;
     local string Text;
+    local Font SavedFont, ScaledFont;
 
     Frac = FClamp(float(P.Health) / FMax(1, P.HealthMax), 0, 1);
     Text = P.Health @ "HP (" $ int(100.0 * Frac) $ "%)";
+
+    //Canvas FontScale cannot go above 1, so a larger size comes from a larger resolution-scaled font
+    SavedFont = C.Font;
+    if(InteractionScale != 1.0) {
+        ScaledFont = class'UT2MidGameFont'.static.GetMidGameFont(int(C.ClipX * InteractionScale));
+        if(ScaledFont != None) {
+            C.Font = ScaledFont;
+        }
+    }
+
     C.DrawColor = GetHealthColor(Frac);
     C.StrLen(Text, XL, YL);
     C.SetPos(X - 0.5 * XL, Y - YL);
     C.DrawText(Text);
+    C.Font = SavedFont;
     return Y - YL;
 }
 
