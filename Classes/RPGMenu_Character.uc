@@ -166,11 +166,37 @@ function InitMenu()
 	FillMyBuildsList();
 }
 
-//Lists the proficiency entries of one kind, e.g. "Veteran (120 / 150)"
+//Case-insensitive comparison of two labels: -1 if A sorts first, 1 if B sorts first, 0 if equal
+function int CompareProfLabels(string A, string B)
+{
+	local int i, CodeA, CodeB;
+
+	A = Caps(A);
+	B = Caps(B);
+	i = 0;
+	while(i < Len(A) && i < Len(B))
+	{
+		CodeA = Asc(Mid(A, i, 1));
+		CodeB = Asc(Mid(B, i, 1));
+		if(CodeA < CodeB)
+			return -1;
+		if(CodeA > CodeB)
+			return 1;
+		i++;
+	}
+	if(Len(A) < Len(B))
+		return -1;
+	if(Len(A) > Len(B))
+		return 1;
+	return 0;
+}
+
+//Lists the proficiency entries of one kind, sorted by label, e.g. "Veteran (120 / 150)"
 function ShowProficiency(bool bMonster, string Caption)
 {
 	local int i, Count;
-	local string Value;
+	local string Value, Best, Prev;
+	local bool bFound, bHavePrev;
 
 	for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
 	{
@@ -183,22 +209,47 @@ function ShowProficiency(bool bMonster, string Caption)
 	Add("", "");
 	Add(Caption, "", true);
 
-	for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
+	// Selection sort: each pass finds the smallest label after the previous pass and emits every entry with it
+	while(true)
 	{
-		if(RPGMenu.RPRI.ProficiencyEntries[i].bMonster != bMonster)
-			continue;
+		bFound = false;
+		for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
+		{
+			if(RPGMenu.RPRI.ProficiencyEntries[i].bMonster != bMonster)
+				continue;
+			if(bHavePrev && CompareProfLabels(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Prev) <= 0)
+				continue;
+			if(!bFound || CompareProfLabels(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Best) < 0)
+			{
+				Best = RPGMenu.RPRI.ProficiencyEntries[i].LabelText;
+				bFound = true;
+			}
+		}
+		if(!bFound)
+			break;
 
-		Value = RPGMenu.RPRI.ProficiencyEntries[i].TierTitle;
-		if(Value == "")
-			Value = Text_NoProfTier;
+		for(i = 0; i < RPGMenu.RPRI.ProficiencyEntries.Length; i++)
+		{
+			if(RPGMenu.RPRI.ProficiencyEntries[i].bMonster != bMonster)
+				continue;
+			if(CompareProfLabels(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Best) != 0)
+				continue;
 
-		Value = Value @ "(" $ string(RPGMenu.RPRI.ProficiencyEntries[i].Kills);
-		if(RPGMenu.RPRI.ProficiencyEntries[i].NextTier > 0)
-			Value = Value $ " / " $ string(RPGMenu.RPRI.ProficiencyEntries[i].NextTier) $ ")";
-		else
-			Value = Value $ " kills, " $ Text_MaxProfTier $ ")";
+			Value = RPGMenu.RPRI.ProficiencyEntries[i].TierTitle;
+			if(Value == "")
+				Value = Text_NoProfTier;
 
-		Add(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Value);
+			Value = Value @ "(" $ string(RPGMenu.RPRI.ProficiencyEntries[i].Kills);
+			if(RPGMenu.RPRI.ProficiencyEntries[i].NextTier > 0)
+				Value = Value $ " / " $ string(RPGMenu.RPRI.ProficiencyEntries[i].NextTier) $ ")";
+			else
+				Value = Value $ " kills, " $ Text_MaxProfTier $ ")";
+
+			Add(RPGMenu.RPRI.ProficiencyEntries[i].LabelText, Value);
+		}
+
+		Prev = Best;
+		bHavePrev = true;
 	}
 }
 
