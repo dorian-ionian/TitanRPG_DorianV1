@@ -20,6 +20,7 @@ var int TotalPickupChance; // precalculated total Chance of all pickups
 var array<Pickup> CurrentPickups;
 
 var config float PickupLifetime;
+var config float PickupMinSpacing; //no new pickup spawns within this radius of another pickup
 var config StaticMesh PickupStatic;
 var config float PickupDrawScale;
 
@@ -136,7 +137,7 @@ function bool NodeHasPickup(PathNode N, class<Actor> ForWhat) {
     local bool bFound;
 
     bFound = false;
-    foreach N.RadiusActors(class'Pickup', P, ForWhat.default.CollisionRadius) {
+    foreach N.RadiusActors(class'Pickup', P, PickupMinSpacing) {
         bFound = true;
     }
     return bFound;
@@ -223,6 +224,7 @@ defaultproperties {
     MaxAdrenalinePickups=25
     
     PickupLifetime=30
+    PickupMinSpacing=300
     PickupStatic=None
     PickupDrawScale=1
 }
