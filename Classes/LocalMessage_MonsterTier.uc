@@ -57,9 +57,8 @@ static function RenderComplexMessage(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = MessageString;
-	if(TierTitle == "")
-		TierTitle = class'Ability_MonsterProficiency'.static.GetTierTitle(Switch + 1);
+	// MessageString is the full GetString() sentence, not the title.
+	TierTitle = class'Ability_MonsterProficiency'.static.GetTierTitle(Switch + 1);
 	MonsterName = GetMonsterName(class<Monster>(OptionalObject));
 
 	X = Canvas.CurX;

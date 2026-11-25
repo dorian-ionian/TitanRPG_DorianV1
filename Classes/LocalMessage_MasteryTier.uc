@@ -52,8 +52,9 @@ static function RenderComplexMessage(
 	else
 		Name = RelatedPRI_1.PlayerName;
 
-	TierTitle = MessageString;
-	if(TierTitle == "" && Switch >= 0 && Switch < class'Ability_WeaponProficiency'.Default.TierTitles.Length)
+	// MessageString is the full GetString() sentence, not the title.
+	TierTitle = "";
+	if(Switch >= 0 && Switch < class'Ability_WeaponProficiency'.Default.TierTitles.Length)
 		TierTitle = class'Ability_WeaponProficiency'.Default.TierTitles[Switch];
 	if(OptionalObject != None)
 		WeaponName = class<Weapon>(OptionalObject).Default.ItemName;
