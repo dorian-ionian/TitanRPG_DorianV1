@@ -1,7 +1,4 @@
-class RPGInteraction extends Interaction config(TitanRPG);
-
-//Set False in TitanRPG.ini [TitanRPG_DorianV1.RPGInteraction] to skip the per-frame damage text walk
-var config bool bDrawDamageNumbers;
+class RPGInteraction extends Interaction;
 
 struct Vec2
 {
@@ -690,8 +687,7 @@ function PostRender(Canvas Canvas)
 	
 	TimeSeconds = ViewportOwner.Actor.Level.TimeSeconds;
 
-	if(bDrawDamageNumbers)
-		DrawDamageNumbers(Canvas);
+	DrawDamageNumbers(Canvas);
 
 	P = ViewportOwner.Actor.Pawn;
 	if(P == None || P.Health <= 0)
@@ -1334,7 +1330,6 @@ defaultproperties
 	HintColor=(R=255,G=128,B=0,A=255)
 	bDefaultBindings=True
 	bDefaultArtifactBindings=True
-	bDrawDamageNumbers=True
 	ArtifactRepeatDelay=0.35
 	ArtifactRepeatInterval=0.12
 	EXPBarColor=(B=128,G=255,R=128,A=255)

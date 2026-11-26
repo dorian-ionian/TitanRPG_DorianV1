@@ -1,12 +1,10 @@
 /*
     An Interaction for anybody joining the server, even Spectators
 */
-class Interaction_Global extends RPGBaseInteraction config(TitanRPG);
+class Interaction_Global extends RPGBaseInteraction;
 
 var array<FriendlyPawnReplicationInfo> FriendlyPawns;
 
-//Set False in TitanRPG.ini [TitanRPG_DorianV1.Interaction_Global] to skip the per-frame pawn walk that draws mastery titles
-var config bool bDrawMasteryTitles;
 //Filled by the first teammate lookup miss in a frame, cleared at the end of DrawPlayerMasteryTitles
 var array<RPGPlayerReplicationInfo> FrameRPRIs;
 var bool bFrameRPRIsWalked;
@@ -116,7 +114,7 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
     local string Title, Title2, Word, Word2;
     local int Tier, Tier2, MedicLevel;
 
-    if(!bDrawMasteryTitles || ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
+    if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
         return;
     }
 
@@ -378,5 +376,4 @@ function RemoveFriendlyPawn(FriendlyPawnReplicationInfo FPRI) {
 
 defaultproperties {
 	bVisible=True
-	bDrawMasteryTitles=True
 }
