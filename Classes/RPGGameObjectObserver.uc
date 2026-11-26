@@ -14,6 +14,8 @@ var Controller FirstTouch; //first holder of current cap
 
 var float TotalTimeHeld;
 
+var float NextObjectSearch; //SetGameObject retries on an interval until the object exists
+
 event Tick(float dt)
 {
 	local byte NewTeam;
@@ -24,8 +26,11 @@ event Tick(float dt)
 	
 	Super.Tick(dt);
 	
-	if(GO == None)
+	if(GO == None && Level.TimeSeconds >= NextObjectSearch)
+	{
+		NextObjectSearch = Level.TimeSeconds + 0.5;
 		SetGameObject();
+	}
 	
 	if(GO != None)
 	{

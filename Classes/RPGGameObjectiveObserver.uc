@@ -5,6 +5,7 @@ class RPGGameObjectiveObserver extends Info;
 
 var RPGRules Rules;
 var array<TeamInfo> Teams;
+var float NextTeamScan; //team lookup retries on an interval until the teams are found
 
 //Game objective
 var GameObjective Objective;
@@ -68,8 +69,9 @@ event Tick(float dt)
 	local TeamInfo Team;
 
 	//Find teams
-	if(Level.Game.bTeamGame && Teams.Length == 0)
+	if(Level.Game.bTeamGame && Teams.Length == 0 && Level.TimeSeconds >= NextTeamScan)
 	{
+		NextTeamScan = Level.TimeSeconds + 1.0;
 		foreach DynamicActors(class'TeamInfo', Team)
 			Teams[Team.TeamIndex] = Team;
 	}

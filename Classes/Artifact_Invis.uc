@@ -5,6 +5,7 @@ var config int ExtraCostPerEnemy;
 
 var xPawn xInstigator;
 var bool bResetInvis;
+var float NextEnemyCheck; //NearbyEnemies walks every controller, so it runs on an interval, not every tick
 
 const MSG_InvisCombo = 0x1000;
 
@@ -81,7 +82,11 @@ state Activated
 			GotoState('');
 		}
 	
-		CurrentCostPerSec = CostPerSec + ExtraCostPerEnemy * NearbyEnemies();
+		if(Level.TimeSeconds >= NextEnemyCheck)
+		{
+			NextEnemyCheck = Level.TimeSeconds + 0.25;
+			CurrentCostPerSec = CostPerSec + ExtraCostPerEnemy * NearbyEnemies();
+		}
 		Super.Tick(dt);
 	}
 

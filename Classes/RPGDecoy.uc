@@ -6,6 +6,9 @@ class RPGDecoy extends ONSDecoy;
 
 //var ONSDualAttackCraft ProtectedTarget - OBSOLETE -pd
 
+//Homing scans run on this interval instead of every frame
+var float ScanInterval, NextHomeTime;
+
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
@@ -21,6 +24,10 @@ simulated event Tick(float dt)
 
 	if(Role < ROLE_Authority)
 		return; //necessary? I dunno but it's making sure -pd
+
+	if(Level.TimeSeconds < NextHomeTime)
+		return;
+	NextHomeTime = Level.TimeSeconds + ScanInterval;
 		
 	/*
 		Since we cannot react on vehicle events (cba to create a wrapper like RPGWeapon),
@@ -46,6 +53,7 @@ simulated event Destroyed()	// Remove it from the Dual Attack craft's array //no
 defaultproperties
 {
 	DecoyRange=2048.000000
+	ScanInterval=0.250000
 	Speed=1500.000000
 	MaxSpeed=2250.000000
 	Damage=50.000000

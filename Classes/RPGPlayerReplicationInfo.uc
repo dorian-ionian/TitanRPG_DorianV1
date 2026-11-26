@@ -120,6 +120,7 @@ var string HeldWeaponTitle2, HeldWeaponName2;
 var byte HeldWeaponTier2;
 var float NextHandCheck; //throttles the check for dual-wield gun swaps, which don't change Pawn.Weapon
 var bool bHasWeaponProficiency; //replicated because ability levels bought after joining don't reach clients
+var float NextProficiencyCheck; //HasAbility is a linear scan, so it is refreshed on a timer, not every tick
 var float Experience;
 var array<RPGAbility> Abilities;
 
@@ -924,13 +925,17 @@ simulated event Tick(float dt)
 	
 	CheckPlayerViewShake();
     
-    if(Role < ROLE_Authority) {
+    if(Role < ROLE_Authority && ModifyProjectiles.Length > 0) {
         ProcessProjectileMods();
     }
 	
 	if(Role == ROLE_Authority)
 	{
-		bHasWeaponProficiency = HasAbility(class'Ability_WeaponProficiency') > 0;
+		if(Level.TimeSeconds >= NextProficiencyCheck)
+		{
+			NextProficiencyCheck = Level.TimeSeconds + 0.5;
+			bHasWeaponProficiency = HasAbility(class'Ability_WeaponProficiency') > 0;
+		}
 
 		//Dual-wield gun swaps don't change Pawn.Weapon, so refresh the held guns on a short timer
 		if(Level.TimeSeconds >= NextHandCheck)

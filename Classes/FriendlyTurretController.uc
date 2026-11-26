@@ -14,6 +14,10 @@ var config float FireRate;
 var config float DefaultSightRadius;
 var config float DefaultSkill;
 
+//Target scans are throttled: VisibleCollidingActors + CanSee every frame was costly with several turrets
+var config float ScanInterval;
+var float NextScanTime;
+
 var FriendlyPawnReplicationInfo FPRI;
 
 event PostBeginPlay()
@@ -47,6 +51,7 @@ function Possess(Pawn aPawn)
     //Defaults, controlled by abiltiies
     aPawn.SightRadius = DefaultSightRadius;
     InitializeSkill(DefaultSkill);
+    NextScanTime = Level.TimeSeconds + FRand() * ScanInterval; //stagger turrets so their scans don't coincide
     
     if(aPawn.Weapon != None) {
         //TODO possibly modify fire rate
@@ -129,6 +134,10 @@ state Searching
         local Pawn P;
 
         Global.Tick(dt);
+
+        if(Level.TimeSeconds < NextScanTime)
+            return;
+        NextScanTime = Level.TimeSeconds + ScanInterval;
         
         foreach Pawn.VisibleCollidingActors(class'Pawn', P, Pawn.SightRadius) {
             if(CanSee(P)) {
@@ -171,6 +180,10 @@ auto state Sleeping {
         local Pawn P;
 
         Global.Tick(dt);
+
+        if(Level.TimeSeconds < NextScanTime)
+            return;
+        NextScanTime = Level.TimeSeconds + ScanInterval;
         
         foreach Pawn.VisibleCollidingActors(class'Pawn', P, Pawn.SightRadius) {
             SeePlayer(P);
@@ -222,4 +235,5 @@ defaultproperties {
     
     DefaultSightRadius=2048
     DefaultSkill=7
+    ScanInterval=0.25
 }

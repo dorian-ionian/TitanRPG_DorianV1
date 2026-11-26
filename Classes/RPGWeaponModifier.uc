@@ -25,6 +25,8 @@ var Material ModifierOverlay;
 
 //Client Sync
 var Sync_OverlayMaterial SyncThirdPerson;
+var Weapon CachedSpriteWeapon; //HasSpriteDisplay result for CachedSpriteWeapon, so Tick doesn't recheck it every frame
+var bool bCachedSprite;
 
 var int ClientModifier;
 var bool bClientIdentified; //checked client-side
@@ -426,7 +428,7 @@ simulated event Tick(float dt) {
 		
 		if(bActive) {
             //Sprite weapons (Doom) must never get an overlay: DoomWeapon copies it into a shared shader that stays white
-            if(bIdentified && xPawn(Instigator) != None && !HasSpriteDisplay()) {
+            if(bIdentified && xPawn(Instigator) != None && !IsSpriteWeapon()) {
                 X = xPawn(Instigator);
                 if(X.HasUDamage()) {
                     if(Weapon.OverlayMaterial != X.UDamageWeaponMaterial) {
@@ -552,6 +554,14 @@ function bool HasSpriteDisplay() {
 
     AttachClass = class<WeaponAttachment>(Weapon.AttachmentClass);
     return AttachClass != None && (AttachClass.default.DrawType == DT_Sprite || AttachClass.default.DrawType == DT_VerticalSprite);
+}
+
+function bool IsSpriteWeapon() {
+    if(Weapon != CachedSpriteWeapon) {
+        CachedSpriteWeapon = Weapon;
+        bCachedSprite = HasSpriteDisplay();
+    }
+    return bCachedSprite;
 }
 
 function SetOverlay(optional Material Mat) {
