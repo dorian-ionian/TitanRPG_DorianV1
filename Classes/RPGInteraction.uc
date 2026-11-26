@@ -163,7 +163,11 @@ function bool KeyEvent(EInputKey Key, EInputAction Action, float Delta)
 		else if(Key == IK_0)
 		{
 			if(GetSelectionPageCount() > 1)
+			{
 				SelectionPage = (SelectionPage + 1) % GetSelectionPageCount();
+				if(SelectionArtifact.IsA('Artifact_SummonMonster'))
+					RPRI.ServerSetSummonPage(SelectionPage);
+			}
 			return true;
 		}
 		else if(Key >= IK_1 && Key <= IK_9)
@@ -302,13 +306,15 @@ function FindRPRI()
 	Settings.SaveConfig();
 }
 
-function ShowSelection(RPGArtifact A)
+function ShowSelection(RPGArtifact A, optional int Page)
 {
 	if(SelectionArtifact != None)
 		SelectionArtifact.ServerCloseSelection();
 
 	SelectionArtifact = A;
 	SelectionPage = 0;
+	if(A.IsA('Artifact_SummonMonster'))
+		SelectionPage = Page;
 }
 
 function CloseSelection()

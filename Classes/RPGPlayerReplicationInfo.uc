@@ -41,6 +41,7 @@ var array<FavoriteWeapon> FavoriteWeapons;
 //Weapon and Artifact Restoration
 var class<Powerups> LastSelectedPowerupType;
 var FavoriteWeapon LastSelectedWeapon;
+var int SummonPage; //server: last monster summon selection page, saved in RPGData
 
 var Weapon SwitchToWeapon; //client
 
@@ -196,7 +197,7 @@ replication
         ClientSyncProjectile;
 	reliable if(Role < ROLE_Authority)
 		ServerBuyAbility, ServerNoteActivity,
-		ServerSwitchBuild, ServerResetData, ServerRebuildData,
+		ServerSwitchBuild, ServerResetData, ServerRebuildData, ServerSetSummonPage,
 		ServerClearArtifactOrder, ServerAddArtifactOrderEntry, ServerSortArtifacts,
 		ServerGetArtifact, ServerActivateArtifact, //moved from TitanPlayerController for better compatibility
 		ServerDestroyTurrets, ServerKillMonsters, ServerDestroyTotems,
@@ -582,7 +583,8 @@ simulated function ClientSetup()
 	NextReplicationInfo = PRI.CustomReplicationInfo;
 	PRI.CustomReplicationInfo = Self;
 	
-	xPlayer(Controller).ComboList[0] = class'RPGComboSpeed';
+	if(xPlayer(Controller).ComboList[0] == class'ComboSpeed')
+		xPlayer(Controller).ComboList[0] = class'RPGComboSpeed';
 	
 	if(Role < ROLE_Authority) //not offline
 	{
@@ -1781,6 +1783,7 @@ function LoadData(RPGData Data)
 		LastSelectedPowerupType = class<Powerups>(DynamicLoadObject(DataObject.LSP, class'Class', true));
 	if(DataObject.LSW != "")
 		LastSelectedWeapon.WeaponClass = class<Weapon>(DynamicLoadObject(DataObject.LSW, class'Class', true));
+	SummonPage = DataObject.SMP;
 	
 	Abilities.Remove(0, Abilities.Length);
 	
@@ -1861,6 +1864,7 @@ function SaveData()
 	DataObject.LSW = "";
 	if(LastSelectedWeapon.WeaponClass != None)
 		DataObject.LSW = string(LastSelectedWeapon.WeaponClass);
+	DataObject.SMP = SummonPage;
 
 	DataObject.AB.Remove(0, DataObject.AB.Length);
 	DataObject.AL.Remove(0, DataObject.AL.Length);
@@ -1875,10 +1879,16 @@ function SaveData()
 	DataObject.SaveConfig();
 }
 
-simulated function ClientShowSelection(RPGArtifact A)
+simulated function ClientShowSelection(RPGArtifact A, int Page)
 {
 	if(Interaction != None)
-		Interaction.ShowSelection(A);
+		Interaction.ShowSelection(A, Page);
+}
+
+function ServerSetSummonPage(int Page)
+{
+	SummonPage = Page;
+	SaveData();
 }
 
 //Persistent per-weapon kill count, stored in RPGData (TitanRPGPlayerData.ini)

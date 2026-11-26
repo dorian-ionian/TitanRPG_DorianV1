@@ -662,7 +662,7 @@ final function ServerSelectOption(int i)
 function ShowSelection()
 {
 	bInSelection = true;
-	InstigatorRPRI.ClientShowSelection(Self);
+	InstigatorRPRI.ClientShowSelection(Self, InstigatorRPRI.SummonPage);
 }
 
 //return selection options

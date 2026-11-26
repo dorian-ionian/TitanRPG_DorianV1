@@ -14,6 +14,7 @@ var config array<int> AL; //ability levels
 
 var config string LSP; //last selected artifact class, restored on respawn and map change
 var config string LSW; //last held weapon class
+var config int SMP; //last monster summon selection page (0-based)
 
 var config array<string> WP; //weapon class names with recorded kills
 var config array<int> WK; //lifetime kills per weapon in WP
