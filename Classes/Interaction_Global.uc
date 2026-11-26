@@ -1,9 +1,15 @@
 /*
     An Interaction for anybody joining the server, even Spectators
 */
-class Interaction_Global extends RPGBaseInteraction;
+class Interaction_Global extends RPGBaseInteraction config(TitanRPG);
 
 var array<FriendlyPawnReplicationInfo> FriendlyPawns;
+
+//Set False in TitanRPG.ini [TitanRPG_DorianV1.Interaction_Global] to skip the per-frame pawn walk that draws mastery titles
+var config bool bDrawMasteryTitles;
+//Filled by the first teammate lookup miss in a frame, cleared at the end of DrawPlayerMasteryTitles
+var array<RPGPlayerReplicationInfo> FrameRPRIs;
+var bool bFrameRPRIsWalked;
 
 function PostRender(Canvas C) {
     local int i;
@@ -110,11 +116,12 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
     local string Title, Title2, Word, Word2;
     local int Tier, Tier2, MedicLevel;
 
-    if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
+    if(!bDrawMasteryTitles || ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
         return;
     }
 
     MedicLevel = GetMedicLevel();
+    bFrameRPRIsWalked = false;
 
     foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
         if(P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
@@ -151,6 +158,7 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
         C.FontScaleX = 1.0f;
         C.FontScaleY = 1.0f;
     }
+    FrameRPRIs.Length = 0;
 }
 
 //Monster label reads "Owner's Tier Monster" in one line: white, with only the tier word coloured
@@ -260,16 +268,24 @@ function bool GetMasteryTitles(PlayerReplicationInfo PRI, out string Title, out 
 
 //Clients don't always get the PRI's CustomReplicationInfo link for other players,
 //so fall back to finding the RPRI whose replicated PRI matches.
+//The fallback list is walked at most once per frame, not once per teammate.
 function RPGPlayerReplicationInfo GetRPRIFor(PlayerReplicationInfo PRI) {
     local RPGPlayerReplicationInfo RPRI;
+    local int i;
 
     RPRI = class'RPGPlayerReplicationInfo'.static.GetForPRI(PRI);
     if(RPRI != None) {
         return RPRI;
     }
-    foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
-        if(RPRI.PRI == PRI) {
-            return RPRI;
+    if(!bFrameRPRIsWalked) {
+        bFrameRPRIsWalked = true;
+        foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
+            FrameRPRIs[FrameRPRIs.Length] = RPRI;
+        }
+    }
+    for(i = 0; i < FrameRPRIs.Length; i++) {
+        if(FrameRPRIs[i].PRI == PRI) {
+            return FrameRPRIs[i];
         }
     }
     return None;
@@ -362,4 +378,5 @@ function RemoveFriendlyPawn(FriendlyPawnReplicationInfo FPRI) {
 
 defaultproperties {
 	bVisible=True
+	bDrawMasteryTitles=True
 }

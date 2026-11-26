@@ -3,10 +3,13 @@
 	Invasion monsters. Enabled by MutTitanRPG.bShowMonsterLevel; added
 	client-side by RPGReplicationInfo.ClientSetup.
 */
-class Interaction_MonsterLevel extends RPGBaseInteraction;
+class Interaction_MonsterLevel extends RPGBaseInteraction config(TitanRPG);
 
 var Interaction_Awareness AwarenessInteraction;
 var Color RedColor;
+
+//Set False in TitanRPG.ini [TitanRPG_DorianV1.Interaction_MonsterLevel] to skip the per-frame monster walk that draws monster labels
+var config bool bDrawMonsterLevels;
 
 //Screen Y of the top edge of the Interaction_Awareness stack for this pawn
 //(health bar, plus the HP text that sits above it). Mirrors that class's geometry.
@@ -42,10 +45,8 @@ function PostRender(Canvas C)
 	local Font SavedFont;
 	local int i;
 
-	if(ViewportOwner.Actor == None)
+	if(!bDrawMonsterLevels || ViewportOwner.Actor == None)
 		return;
-
-	InteractionScale = GetInteractionScale();
 	SavedFont = C.Font;
 
 	if(AwarenessInteraction == None)
@@ -141,4 +142,5 @@ defaultproperties
 {
 	RedColor=(R=255,G=64,B=64,A=255)
 	bVisible = true;
+	bDrawMonsterLevels=True
 }
