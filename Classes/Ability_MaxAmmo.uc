@@ -291,6 +291,8 @@ function ModifyWeapon(Weapon W)
                     AmmoInst.MaxAmmo = MaxAmmo;
                     AmmoInst.NetUpdateTime = Level.TimeSeconds - 1;
                 }
+                if(Role == ROLE_Authority && AmmoInst.AmmoAmount > MaxAmmo)
+                    AmmoInst.AmmoAmount = MaxAmmo;
             }
         }
     }
@@ -299,11 +301,18 @@ function ModifyWeapon(Weapon W)
     //read their capacity from there (MaxAmmo/AmmoAmount/ReloadClip/AddAmmo
     //all run off default.AmmoCharge), so this makes the ability actually
     //increase mag size and reload caps for them
+    //the class default is shared by every player, so it is only a ceiling -
+    //this owner's weapon is held to its OWN cap (fills, reloads, regen)
     for(i = 0; i < 2; i++) {
         if(GetBaseAmmoCharge(W.class, i) > 0) {
             MaxAmmo = int(float(GetBaseAmmoCharge(W.class, i)) * Factor);
             if(W.class.default.AmmoCharge[i] < MaxAmmo) {
                 SetWeaponChargeMax(W.class, i, MaxAmmo);
+                bRaisedAny = true;
+            }
+            if(Role == ROLE_Authority && W.AmmoCharge[i] > MaxAmmo) {
+                W.AmmoCharge[i] = MaxAmmo;
+                W.NetUpdateTime = Level.TimeSeconds - 1;
                 bRaisedAny = true;
             }
         }
@@ -325,12 +334,12 @@ function ModifyWeapon(Weapon W)
         Charge1 = GetBaseAmmoCharge(W.class, 1);
 
         if(Charge0 > 0 || Charge1 > 0) {
-            if(Charge0 > 0 && W.AmmoCharge[0] == W.class.default.AmmoCharge[0] && W.AmmoCharge[0] > 0) {
+            if(Charge0 > 0 && W.AmmoCharge[0] >= int(float(Charge0) * Factor) && W.AmmoCharge[0] > 0) {
                 W.AmmoCharge[0] = Charge0;
                 W.NetUpdateTime = Level.TimeSeconds - 1;
                 bClamped = true;
             }
-            if(Charge1 > 0 && W.AmmoCharge[1] == W.class.default.AmmoCharge[1] && W.AmmoCharge[1] > 0) {
+            if(Charge1 > 0 && W.AmmoCharge[1] >= int(float(Charge1) * Factor) && W.AmmoCharge[1] > 0) {
                 W.AmmoCharge[1] = Charge1;
                 W.NetUpdateTime = Level.TimeSeconds - 1;
                 bClamped = true;
