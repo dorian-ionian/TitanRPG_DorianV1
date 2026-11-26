@@ -23,6 +23,7 @@ struct RPGScorerRecord
 };
 
 var array<RPGScorerRecord> Scorers;
+var float NextScoreCheck; //UpdateScore is O(n^2); Pct deltas accumulate, so running it once a second loses nothing
 
 event PostBeginPlay() {
     Super.PostBeginPlay();
@@ -38,7 +39,8 @@ event Tick(float dt) {
 
     Super.Tick(dt);
     
-    if(!ONSGame.bGameEnded && ONSGame.ResetCountDown == 0 && (Stage == 0 || Stage == 2)) {
+    if(!ONSGame.bGameEnded && ONSGame.ResetCountDown == 0 && (Stage == 0 || Stage == 2) && Level.TimeSeconds >= NextScoreCheck) {
+        NextScoreCheck = Level.TimeSeconds + 1.0;
         for(i = 0; i < Core.Scorers.Length; i++)    {
             UpdateScore(Core.Scorers[i]);
         }
