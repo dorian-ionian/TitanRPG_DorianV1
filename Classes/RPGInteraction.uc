@@ -20,6 +20,8 @@ var float TimeSeconds;
 //Per-frame HUD lookups are cached and refreshed on a timer
 var float NextOwnedMonsterScan;
 var array<FriendlyPawnReplicationInfo> OwnedMonsterCache;
+var float NextDamageTextScan;
+var array<RPGDamageText> DamageTextCache;
 var float NextArtifactScan;
 var array<RPGArtifact> ArtifactCache;
 var float NextWeaponModScan;
@@ -598,6 +600,7 @@ function Color DamageSpectrumColor(int Amount)
 function DrawDamageNumbers(Canvas Canvas)
 {
 	local RPGDamageText T;
+	local int i;
 	local HudBase H;
 	local vector Cam, Dir, Base, Screen, ToBase;
 	local rotator CamRot;
@@ -623,8 +626,20 @@ function DrawDamageNumbers(Canvas Canvas)
 	Canvas.FontScaleX = OldFontScaleX * 0.75;
 	Canvas.FontScaleY = OldFontScaleY * 0.75;
 
-	foreach ViewportOwner.Actor.DynamicActors(class'RPGDamageText', T)
+	if(TimeSeconds >= NextDamageTextScan)
 	{
+		NextDamageTextScan = TimeSeconds + 0.1;
+		DamageTextCache.Length = 0;
+		foreach ViewportOwner.Actor.DynamicActors(class'RPGDamageText', T)
+			DamageTextCache[DamageTextCache.Length] = T;
+	}
+
+	for(i = 0; i < DamageTextCache.Length; i++)
+	{
+		T = DamageTextCache[i];
+		if(T == None)
+			continue;
+
 		Age = TimeSeconds - T.SpawnTime;
 		if(Age < 0 || Age > 2.2 || T.Amount <= 0)
 			continue;
