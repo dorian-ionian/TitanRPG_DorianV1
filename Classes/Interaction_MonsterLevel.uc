@@ -8,10 +8,6 @@ class Interaction_MonsterLevel extends RPGBaseInteraction;
 var Interaction_Awareness AwarenessInteraction;
 var Color RedColor;
 
-//The monster list is refreshed on a timer; each frame reads the live level and HP from the cached objects
-var array<RPGMonsterLevelInv> InvCache;
-var float NextInvCacheRefresh;
-
 //Screen Y of the top edge of the Interaction_Awareness stack for this pawn
 //(health bar, plus the HP text that sits above it). Mirrors that class's geometry.
 //Mirrors Interaction_Awareness geometry for the enemy anchor P (the vehicle for vehicle monsters, otherwise the pawn)
@@ -64,18 +60,9 @@ function PostRender(Canvas C)
 		}
 	}
 
-	if(ViewportOwner.Actor.Level.TimeSeconds >= NextInvCacheRefresh)
+	foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
 	{
-		NextInvCacheRefresh = ViewportOwner.Actor.Level.TimeSeconds + 0.5;
-		InvCache.Length = 0;
-		foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
-			InvCache[InvCache.Length] = Inv;
-	}
-
-	for(i = 0; i < InvCache.Length; i++)
-	{
-		Inv = InvCache[i];
-		if(Inv == None || Inv.MyMonster == None || Inv.MonsterLevel <= 0)
+		if(Inv.MyMonster == None || Inv.MonsterLevel <= 0)
 			continue;
 
 		//Vehicle monsters are labelled on their vehicle shell

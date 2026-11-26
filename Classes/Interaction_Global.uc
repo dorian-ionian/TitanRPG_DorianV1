@@ -5,11 +5,6 @@ class Interaction_Global extends RPGBaseInteraction;
 
 var array<FriendlyPawnReplicationInfo> FriendlyPawns;
 
-//Pawn and RPRI lists for the mastery titles, refreshed on a timer instead of walking the level every frame
-var array<Pawn> PawnCache;
-var array<RPGPlayerReplicationInfo> RPRICache;
-var float NextActorCacheRefresh;
-
 function PostRender(Canvas C) {
     local int i;
     local float FarAwayInv, Dist, ScaledDist, Scale, Height, Pct;
@@ -113,7 +108,7 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
     local vector ScreenPos, TopPos;
     local float Dist;
     local string Title, Title2, Word, Word2;
-    local int Tier, Tier2, MedicLevel, i;
+    local int Tier, Tier2, MedicLevel;
 
     if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
         return;
@@ -121,10 +116,8 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
 
     MedicLevel = GetMedicLevel();
 
-    RefreshActorCaches();
-    for(i = 0; i < PawnCache.Length; i++) {
-        P = PawnCache[i];
-        if(P == None || P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
+    foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
+        if(P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
             continue;
         }
         if(P.PlayerReplicationInfo.Team != ViewportOwner.Actor.PlayerReplicationInfo.Team) {
@@ -269,42 +262,17 @@ function bool GetMasteryTitles(PlayerReplicationInfo PRI, out string Title, out 
 //so fall back to finding the RPRI whose replicated PRI matches.
 function RPGPlayerReplicationInfo GetRPRIFor(PlayerReplicationInfo PRI) {
     local RPGPlayerReplicationInfo RPRI;
-    local int i;
 
     RPRI = class'RPGPlayerReplicationInfo'.static.GetForPRI(PRI);
     if(RPRI != None) {
         return RPRI;
     }
-    RefreshActorCaches();
-    for(i = 0; i < RPRICache.Length; i++) {
-        if(RPRICache[i] != None && RPRICache[i].PRI == PRI) {
-            return RPRICache[i];
+    foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
+        if(RPRI.PRI == PRI) {
+            return RPRI;
         }
     }
     return None;
-}
-
-//Walks the level at most every 0.5 s. Pawns and RPRIs are added or removed slowly, so a short delay is fine.
-function RefreshActorCaches() {
-    local Pawn P;
-    local RPGPlayerReplicationInfo RPRI;
-    local float Now;
-
-    Now = ViewportOwner.Actor.Level.TimeSeconds;
-    if(Now < NextActorCacheRefresh) {
-        return;
-    }
-    NextActorCacheRefresh = Now + 0.5;
-
-    PawnCache.Length = 0;
-    foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
-        PawnCache[PawnCache.Length] = P;
-    }
-
-    RPRICache.Length = 0;
-    foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
-        RPRICache[RPRICache.Length] = RPRI;
-    }
 }
 
 //Highest Medic Awareness level the local player has, 0 if none
