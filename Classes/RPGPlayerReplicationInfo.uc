@@ -1772,6 +1772,7 @@ function LoadData(RPGData Data)
 
 	DataObject = Data;
 	RPGName = string(Data.Name);
+	MergeMonsterKillEntries();
 
 	RPGLevel = DataObject.LV;
 	PointsAvailable = DataObject.PA;
@@ -1954,7 +1955,7 @@ function AddMonsterKill(class<Monster> MonsterClass)
 	Alias = string(MonsterClass);
 	for(i = 0; i < DataObject.MP.Length; i++)
 	{
-		if(DataObject.MP[i] == Alias)
+		if(DataObject.MP[i] ~= Alias)
 			break;
 	}
 	if(i == DataObject.MP.Length)
@@ -1993,10 +1994,29 @@ function int GetMonsterKills(class<Monster> MonsterClass)
 	Alias = string(MonsterClass);
 	for(i = 0; i < DataObject.MP.Length; i++)
 	{
-		if(DataObject.MP[i] == Alias)
+		if(DataObject.MP[i] ~= Alias)
 			return DataObject.MK[i];
 	}
 	return 0;
+}
+
+//Folds kill entries saved under a differently cased package name (e.g. U1Pawns.X and U1pawns.X) into the first one
+function MergeMonsterKillEntries()
+{
+	local int i, j;
+
+	for(i = 0; i < DataObject.MP.Length; i++)
+	{
+		for(j = DataObject.MP.Length - 1; j > i; j--)
+		{
+			if(DataObject.MP[j] ~= DataObject.MP[i])
+			{
+				DataObject.MK[i] += DataObject.MK[j];
+				DataObject.MP.Remove(j, 1);
+				DataObject.MK.Remove(j, 1);
+			}
+		}
+	}
 }
 
 //Records a monster class the first time a friendly monster pickup spawns it
