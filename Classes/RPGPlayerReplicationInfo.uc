@@ -143,6 +143,7 @@ var int RebuildMaxLevelLoss;
 
 //client
 var bool bClientSetup;
+var float NextClientSetupTry; //retry interval while setup keeps failing
 var bool bClientSyncDone;
 
 var RPGInteraction Interaction;
@@ -891,8 +892,11 @@ simulated event Tick(float dt)
 
 	if(Level.NetMode != NM_DedicatedServer)
 	{
-		if(!bClientSetup)
+		if(!bClientSetup && Level.TimeSeconds >= NextClientSetupTry)
+		{
+			NextClientSetupTry = Level.TimeSeconds + 0.2;
 			ClientSetup();
+		}
 		
 		if(SwitchToWeapon != None) //wait until it arrived in the inventory?
 		{

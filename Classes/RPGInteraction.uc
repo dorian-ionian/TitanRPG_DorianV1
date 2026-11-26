@@ -10,7 +10,20 @@ struct Rect
 	var float X, Y, W, H;
 };
 
+//Copied values of a live RPGDamageText, so no Actor or Pawn reference is held across frames
+struct DamageSnapshot
+{
+	var int Amount;
+	var vector Spot;
+	var float SpawnTime;
+	var float ScatterX, ScatterY;
+};
+
 var RPGPlayerReplicationInfo RPRI;
+var float NextRPRITry;
+var bool bWarnedNoRPRI;
+var float NextDamageScan;
+var array<DamageSnapshot> DamageSnaps;
 
 var RPGSettings Settings;
 var RPGCharSettings CharSettings;
@@ -295,7 +308,11 @@ function FindRPRI()
 	RPRI = class'RPGPlayerReplicationInfo'.static.GetFor(ViewportOwner.Actor);
 	if(RPRI == None)
 	{
-		Warn("RPGInteraction: Could not find RPRI!");
+		if(!bWarnedNoRPRI)
+		{
+			bWarnedNoRPRI = true;
+			Warn("RPGInteraction: Could not find RPRI!");
+		}
 		return;
 	}
 
@@ -597,14 +614,15 @@ function Color DamageSpectrumColor(int Amount)
 
 function DrawDamageNumbers(Canvas Canvas)
 {
-	local RPGDamageText T;
+	local RPGDamageText R;
+	local DamageSnapshot T;
 	local HudBase H;
 	local vector Cam, Dir, Base, Screen, ToBase;
 	local rotator CamRot;
 	local float Age, Alpha, XL, YL, Scale;
 	local string S;
 	local Font OldFont;
-	local int OldStyle;
+	local int OldStyle, i;
 	local float OldFontScaleX, OldFontScaleY;
 	local Color NumColor;
 
@@ -623,15 +641,36 @@ function DrawDamageNumbers(Canvas Canvas)
 	Canvas.FontScaleX = OldFontScaleX * 0.75;
 	Canvas.FontScaleY = OldFontScaleY * 0.75;
 
-	foreach ViewportOwner.Actor.DynamicActors(class'RPGDamageText', T)
+	//The DynamicActors walk is the costly part, so it runs about 20 times a second and the frame draws from copied values
+	if(TimeSeconds >= NextDamageScan)
 	{
+		NextDamageScan = TimeSeconds + 0.05;
+		DamageSnaps.Length = 0;
+		foreach ViewportOwner.Actor.DynamicActors(class'RPGDamageText', R)
+		{
+			if(R.Amount <= 0 || TimeSeconds - R.SpawnTime > 2.2)
+				continue;
+
+			i = DamageSnaps.Length;
+			DamageSnaps.Length = i + 1;
+			DamageSnaps[i].Amount = R.Amount;
+			DamageSnaps[i].Spot = R.Spot;
+			if(R.Victim != None)
+				DamageSnaps[i].Spot = R.Victim.Location + vect(0,0,1) * R.Victim.CollisionHeight;
+			DamageSnaps[i].SpawnTime = R.SpawnTime;
+			DamageSnaps[i].ScatterX = R.ScatterX;
+			DamageSnaps[i].ScatterY = R.ScatterY;
+		}
+	}
+
+	for(i = 0; i < DamageSnaps.Length; i++)
+	{
+		T = DamageSnaps[i];
 		Age = TimeSeconds - T.SpawnTime;
 		if(Age < 0 || Age > 2.2 || T.Amount <= 0)
 			continue;
 
 		Base = T.Spot;
-		if(T.Victim != None)
-			Base = T.Victim.Location + vect(0,0,1) * T.Victim.CollisionHeight;
 
 		// Skip points behind the view plane. Off-screen points to the side are removed by the screen bounds test below.
 		ToBase = Base - Cam;
@@ -701,11 +740,11 @@ function PostRender(Canvas Canvas)
 	if(RedeemerWarhead(P) != None)
 		return;
 		
-	if(RPRI == None)
+	if(RPRI == None && TimeSeconds >= NextRPRITry)
+	{
+		NextRPRITry = TimeSeconds + 0.5;
 		FindRPRI();
-	
-	if(RPRI == None)
-		return;
+	}
 	
 	HUD = HudCDeathmatch(ViewportOwner.Actor.myHUD);
 	if(HUD == None || HUD.bHideHUD || HUD.bShowScoreboard || HUD.bShowLocalStats)
