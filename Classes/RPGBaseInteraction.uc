@@ -24,6 +24,9 @@ var float CachedInteractionScale;
 var float NextInteractionScaleRead;
 const InteractionScaleRefresh = 2.0;
 
+//Pawns projected this many pixels past the screen edge are still checked; others skip the line trace
+const ScreenCullMargin = 150.0;
+
 //Read from InvasionPro's DorianRPGInvServerSettings.ini; falls back to 1.0 when InvasionPro is not loaded
 function float GetInteractionScale() {
     local class<Object> C;
@@ -73,11 +76,6 @@ function bool IsPawnVisible(Canvas C, Pawn P, out vector Pos, out float Dist) {
         return false;
     }
 
-    //check if in line of sight
-    if(!ViewportOwner.Actor.LineOfSightTo(P)) {
-        return false;
-    }
-
     //get camera data
     C.GetCameraLocation(CamLoc, CamRot);
     
@@ -86,9 +84,19 @@ function bool IsPawnVisible(Canvas C, Pawn P, out vector Pos, out float Dist) {
     if(D dot vector(CamRot) < 0) {
         return false;
     }
+
+    //skip off-screen pawns (with a margin for labels that extend past the edge) before the costly line trace
+    Pos = C.WorldToScreen(P.Location);
+    if(Pos.X < -ScreenCullMargin || Pos.X > C.ClipX + ScreenCullMargin || Pos.Y < -ScreenCullMargin || Pos.Y > C.ClipY + ScreenCullMargin) {
+        return false;
+    }
+
+    //check if in line of sight (the only expensive test, so it runs last)
+    if(!ViewportOwner.Actor.LineOfSightTo(P)) {
+        return false;
+    }
     
     //Calculate output and return true
-    Pos = C.WorldToScreen(P.Location);
     Dist = ViewportOwner.Actor.FOVBias * VSize(D);
     
     return true;
