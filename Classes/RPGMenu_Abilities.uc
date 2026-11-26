@@ -99,12 +99,29 @@ function DrawAbilityInfo(Canvas Canvas, int i, float X, float Y, float W, float 
 	}
 }
 
+function bool AbilityNameBefore(string A, string B)
+{
+	local int i, ca, cb;
+
+	A = Caps(A);
+	B = Caps(B);
+	for(i = 0; i < Len(A) && i < Len(B); i++)
+	{
+		ca = Asc(Mid(A, i, 1));
+		cb = Asc(Mid(B, i, 1));
+		if(ca != cb)
+			return ca < cb;
+	}
+	return Len(A) < Len(B);
+}
+
 function InitMenu()
 {
 	local AbilityInfo AInfo;
 	local RPGAbility Ability;
+	local array<RPGAbility> Sorted;
 	local int OldAbilityListIndex, OldAbilityListTop;
-	local int i, k, n, x;
+	local int i, k, m, n, x;
 
 	OldAbilityListIndex = Abilities.Index;
 	OldAbilityListTop = Abilities.Top;
@@ -115,30 +132,43 @@ function InitMenu()
 	for(i = 0; i < Categories.Length; i++)
 	{
 		x = AbilityInfos.Length;
-		n = 0;
+		Sorted.Length = 0;
 		
 		for(k = 0; k < RPGMenu.RPRI.AllAbilities.Length; k++)
 		{
 			Ability = RPGMenu.RPRI.AllAbilities[k];
 			if(!Ability.bIsStat && Ability.Category == Categories[i])
 			{
-				n++;
-				
-				AInfo.LinkedAbility = Ability;
-				AInfo.Name = Ability.AbilityName;
-				
-				if(Ability.AbilityLevel < Ability.MaxLevel)
-					AInfo.NextLevel = Ability.AbilityLevel + 1;
-				else
-					AInfo.NextLevel = 0;
-
-				AInfo.Cost = Ability.Cost();
-	
-				AbilityInfos[AbilityInfos.Length] = AInfo;
-				Abilities.AddedItem();
+				// Insertion sort by AbilityName
+				Sorted.Length = Sorted.Length + 1;
+				m = Sorted.Length - 1;
+				while(m > 0 && AbilityNameBefore(Ability.AbilityName, Sorted[m-1].AbilityName))
+				{
+					Sorted[m] = Sorted[m-1];
+					m--;
+				}
+				Sorted[m] = Ability;
 			}
 		}
-		
+		n = Sorted.Length;
+
+		for(k = 0; k < n; k++)
+		{
+			Ability = Sorted[k];
+			AInfo.LinkedAbility = Ability;
+			AInfo.Name = Ability.AbilityName;
+			
+			if(Ability.AbilityLevel < Ability.MaxLevel)
+				AInfo.NextLevel = Ability.AbilityLevel + 1;
+			else
+				AInfo.NextLevel = 0;
+
+			AInfo.Cost = Ability.Cost();
+
+			AbilityInfos[AbilityInfos.Length] = AInfo;
+			Abilities.AddedItem();
+		}
+
 		if(n > 0)
 		{
 			AInfo.LinkedAbility = None;
