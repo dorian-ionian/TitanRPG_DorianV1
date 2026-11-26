@@ -1,13 +1,6 @@
 class Ability_MaxAmmo extends RPGAbility;
 
-var array<class<Ammunition> > ModifiedAmmoClasses;
-var array<int> OriginalAmmoMax;
-
-//FragOps-style custom weapons keep their capacity in the WEAPON class
-//default AmmoCharge instead of the AmmoClass MaxAmmo - track those too
-var array<class<Weapon> > ModifiedWeaponClasses;
-var array<int> OriginalAmmoCharge0;
-var array<int> OriginalAmmoCharge1;
+//Stock values are kept by RPGRules (shared by all players), not per instance
 
 //weapon instances we already clamped back to the ORIGINAL mag size after a
 //grant filled them from the (raised) class default - prevents re-clamping
@@ -46,12 +39,6 @@ simulated function ClientSyncAmmoCharge(Weapon W, int Cap0, int Cap1, int Cur0, 
 		W.AmmoCharge[0] = Cur0;
 	if(Cur1 >= 0)
 		W.AmmoCharge[1] = Cur1;
-}
-
-simulated event PostNetBeginPlay()
-{
-    Super.PostNetBeginPlay();
-    RestoreAmmoDefaults();
 }
 
 simulated event PostBeginPlay()
@@ -96,20 +83,21 @@ function int GetRaisedAmmoCharge(class<Weapon> WeaponClass, int Mode)
     return Max(WeaponClass.default.AmmoCharge[Mode], int(float(BaseCharge) * (1.0 + AbilityLevel * BonusPerLevel)));
 }
 
+function RPGRules GetRPGRules() {
+    return class'RPGRules'.static.Instance(Level);
+}
+
 function int GetBaseAmmoMax(class<Ammunition> AmmoClass) {
-    local int i;
+    local RPGRules Rules;
 
     if(AmmoClass == None)
         return 0;
 
-    for(i = 0; i < ModifiedAmmoClasses.Length; i++) {
-        if(ModifiedAmmoClasses[i] == AmmoClass)
-            return OriginalAmmoMax[i];
-    }
+    Rules = GetRPGRules();
+    if(Rules == None)
+        return AmmoClass.Default.MaxAmmo;
 
-    ModifiedAmmoClasses[ModifiedAmmoClasses.Length] = AmmoClass;
-    OriginalAmmoMax[OriginalAmmoMax.Length] = AmmoClass.Default.MaxAmmo;
-    return OriginalAmmoMax[OriginalAmmoMax.Length - 1];
+    return Rules.GetOriginalAmmoMax(AmmoClass);
 }
 
 function SetAmmoClassMax(class<Ammunition> AmmoClass, int NewMax) {
@@ -119,27 +107,19 @@ function SetAmmoClassMax(class<Ammunition> AmmoClass, int NewMax) {
 }
 
 function int GetBaseAmmoCharge(class<Weapon> WeaponClass, int Mode) {
-    local int i, Charge;
+    local RPGRules Rules;
 
     if(WeaponClass == None || Mode < 0 || Mode > 1)
         return 0;
 
-    Charge = WeaponClass.default.AmmoCharge[Mode];
-    if(Charge <= 0)
+    if(WeaponClass.default.AmmoCharge[Mode] <= 0)
         return 0; //this fire mode has no ammo
 
-    for(i = 0; i < ModifiedWeaponClasses.Length; i++) {
-        if(ModifiedWeaponClasses[i] == WeaponClass) {
-            if(Mode == 0)
-                return OriginalAmmoCharge0[i];
-            return OriginalAmmoCharge1[i];
-        }
-    }
+    Rules = GetRPGRules();
+    if(Rules == None)
+        return WeaponClass.default.AmmoCharge[Mode];
 
-    ModifiedWeaponClasses[ModifiedWeaponClasses.Length] = WeaponClass;
-    OriginalAmmoCharge0[OriginalAmmoCharge0.Length] = WeaponClass.default.AmmoCharge[0];
-    OriginalAmmoCharge1[OriginalAmmoCharge1.Length] = WeaponClass.default.AmmoCharge[1];
-    return Charge;
+    return Rules.GetOriginalAmmoCharge(WeaponClass, Mode);
 }
 
 function SetWeaponChargeMax(class<Weapon> WeaponClass, int Mode, int NewMax) {
@@ -148,32 +128,6 @@ function SetWeaponChargeMax(class<Weapon> WeaponClass, int Mode, int NewMax) {
         && NewMax > WeaponClass.default.AmmoCharge[Mode]) {
         WeaponClass.default.AmmoCharge[Mode] = NewMax;
     }
-}
-
-function RestoreAmmoDefaults() {
-    local int i;
-
-    for(i = 0; i < ModifiedAmmoClasses.Length; i++) {
-        if(ModifiedAmmoClasses[i] != None && ModifiedAmmoClasses[i].Default.MaxAmmo > OriginalAmmoMax[i]) {
-            ModifiedAmmoClasses[i].Default.MaxAmmo = OriginalAmmoMax[i];
-        }
-    }
-
-    for(i = 0; i < ModifiedWeaponClasses.Length; i++) {
-        if(ModifiedWeaponClasses[i] != None) {
-            if(ModifiedWeaponClasses[i].default.AmmoCharge[0] > OriginalAmmoCharge0[i])
-                ModifiedWeaponClasses[i].default.AmmoCharge[0] = OriginalAmmoCharge0[i];
-            if(ModifiedWeaponClasses[i].default.AmmoCharge[1] > OriginalAmmoCharge1[i])
-                ModifiedWeaponClasses[i].default.AmmoCharge[1] = OriginalAmmoCharge1[i];
-        }
-    }
-
-    ModifiedAmmoClasses.Length = 0;
-    OriginalAmmoMax.Length = 0;
-    ModifiedWeaponClasses.Length = 0;
-    OriginalAmmoCharge0.Length = 0;
-    OriginalAmmoCharge1.Length = 0;
-    InstanceAmmoClamped.Length = 0;
 }
 
 function bool WasInstanceClamped(Weapon W) {
@@ -185,11 +139,6 @@ function bool WasInstanceClamped(Weapon W) {
     }
 
     return false;
-}
-
-simulated event Destroyed() {
-    RestoreAmmoDefaults();
-    Super.Destroyed();
 }
 
 function ModifyGrantedWeaponAmmo(class<Weapon> WeaponClass, out int Ammo1, out int Ammo2) {
@@ -304,7 +253,7 @@ function ModifyWeapon(Weapon W)
         }
         if(W.Instigator != None) {
             AmmoInst = Ammunition(W.Instigator.FindInventoryType(AmmoClass[0]));
-            if(AmmoInst != None && AmmoInst.MaxAmmo < MaxAmmo) {
+            if(AmmoInst != None && AmmoInst.MaxAmmo != MaxAmmo) {
                 AmmoInst.MaxAmmo = MaxAmmo;
                 AmmoInst.NetUpdateTime = Level.TimeSeconds - 1;
             }
@@ -318,7 +267,7 @@ function ModifyWeapon(Weapon W)
         }
         if(W.Instigator != None) {
             AmmoInst = Ammunition(W.Instigator.FindInventoryType(AmmoClass[1]));
-            if(AmmoInst != None && AmmoInst.MaxAmmo < MaxAmmo) {
+            if(AmmoInst != None && AmmoInst.MaxAmmo != MaxAmmo) {
                 AmmoInst.MaxAmmo = MaxAmmo;
                 AmmoInst.NetUpdateTime = Level.TimeSeconds - 1;
             }
@@ -338,7 +287,7 @@ function ModifyWeapon(Weapon W)
                 if(MaxAmmo > AmmoInst.class.default.MaxAmmo) {
                     SetAmmoClassMax(AmmoInst.class, MaxAmmo);
                 }
-                if(AmmoInst.MaxAmmo < MaxAmmo) {
+                if(AmmoInst.MaxAmmo != MaxAmmo) {
                     AmmoInst.MaxAmmo = MaxAmmo;
                     AmmoInst.NetUpdateTime = Level.TimeSeconds - 1;
                 }

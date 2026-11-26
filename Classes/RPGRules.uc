@@ -28,6 +28,14 @@ var array<Pawn> LastHitVictims;
 var array<Controller> LastHitAttackers;
 var array<class<Weapon> > LastHitWeapons;
 
+//Stock values for Ability_MaxAmmo. Class defaults are shared by every player, so each
+//original is recorded once here (before any raise) rather than per ability instance
+var array<class<Ammunition> > OrigAmmoClasses;
+var array<int> OrigAmmoMax;
+var array<class<Weapon> > OrigChargeClasses;
+var array<int> OrigAmmoCharge0;
+var array<int> OrigAmmoCharge1;
+
 /*
 	Experience Awards
 */
@@ -126,6 +134,75 @@ event PostBeginPlay()
 	SetTimer(Level.TimeDilation, true);
 
 	Super.PostBeginPlay();
+}
+
+event Destroyed()
+{
+	RestoreStockAmmo();
+	Super.Destroyed();
+}
+
+function int GetOriginalAmmoMax(class<Ammunition> AmmoClass)
+{
+	local int i;
+
+	for(i = 0; i < OrigAmmoClasses.Length; i++)
+	{
+		if(OrigAmmoClasses[i] == AmmoClass)
+			return OrigAmmoMax[i];
+	}
+
+	OrigAmmoClasses[OrigAmmoClasses.Length] = AmmoClass;
+	OrigAmmoMax[OrigAmmoMax.Length] = AmmoClass.default.MaxAmmo;
+	return AmmoClass.default.MaxAmmo;
+}
+
+function int GetOriginalAmmoCharge(class<Weapon> WeaponClass, int Mode)
+{
+	local int i;
+
+	for(i = 0; i < OrigChargeClasses.Length; i++)
+	{
+		if(OrigChargeClasses[i] == WeaponClass)
+		{
+			if(Mode == 0)
+				return OrigAmmoCharge0[i];
+			return OrigAmmoCharge1[i];
+		}
+	}
+
+	OrigChargeClasses[OrigChargeClasses.Length] = WeaponClass;
+	OrigAmmoCharge0[OrigAmmoCharge0.Length] = WeaponClass.default.AmmoCharge[0];
+	OrigAmmoCharge1[OrigAmmoCharge1.Length] = WeaponClass.default.AmmoCharge[1];
+	return WeaponClass.default.AmmoCharge[Mode];
+}
+
+function RestoreStockAmmo()
+{
+	local int i;
+
+	for(i = 0; i < OrigAmmoClasses.Length; i++)
+	{
+		if(OrigAmmoClasses[i] != None && OrigAmmoClasses[i].default.MaxAmmo > OrigAmmoMax[i])
+			OrigAmmoClasses[i].default.MaxAmmo = OrigAmmoMax[i];
+	}
+
+	for(i = 0; i < OrigChargeClasses.Length; i++)
+	{
+		if(OrigChargeClasses[i] != None)
+		{
+			if(OrigChargeClasses[i].default.AmmoCharge[0] > OrigAmmoCharge0[i])
+				OrigChargeClasses[i].default.AmmoCharge[0] = OrigAmmoCharge0[i];
+			if(OrigChargeClasses[i].default.AmmoCharge[1] > OrigAmmoCharge1[i])
+				OrigChargeClasses[i].default.AmmoCharge[1] = OrigAmmoCharge1[i];
+		}
+	}
+
+	OrigAmmoClasses.Length = 0;
+	OrigAmmoMax.Length = 0;
+	OrigChargeClasses.Length = 0;
+	OrigAmmoCharge0.Length = 0;
+	OrigAmmoCharge1.Length = 0;
 }
 
 //checks if the player that owns the specified RPGStatsInv is linked up to anybody and if so shares Amount EXP
@@ -974,8 +1051,14 @@ function int ProcessNetDamage(int OriginalDamage, int Damage, pawn injured, pawn
 			HitGun = GetHitWeaponClass(instigatedBy, W, DamageType);
 
 		//Remember the weapon that dealt this hit, so the killing blow credits it instead of whatever is held at death
-		if(HitGun != None && Damage > 0 && !ClassIsChildOf(DamageType, class'RPGDamageType'))
-			RecordLastHit(injured, instigatorController, HitGun);
+		//Turret hits record no weapon: a turret kill earns no weapon proficiency, and clears any earlier hit by the owner's gun
+		if(Damage > 0 && !ClassIsChildOf(DamageType, class'RPGDamageType'))
+		{
+			if(IsTurretDamage(DamageType))
+				RecordLastHit(injured, instigatorController, None);
+			else if(HitGun != None)
+				RecordLastHit(injured, instigatorController, HitGun);
+		}
 		
 		//Stock turret shots are credited to their owner, so the owner's held weapon modifier must not apply to them
 		//Countershove/retaliation hits are reflected by a victim's ability, not dealt by the held weapon
