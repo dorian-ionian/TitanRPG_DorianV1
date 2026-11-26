@@ -19,16 +19,34 @@ var float TeamBeaconMaxDist;
 //Per-player size multiplier for interaction text and bars (set from the Player Preferences menu)
 var float InteractionScale;
 
+//Cached copy of the scale, re-read at most every InteractionScaleRefresh seconds
+var float CachedInteractionScale;
+var float NextInteractionScaleRead;
+const InteractionScaleRefresh = 2.0;
+
 //Read from InvasionPro's DorianRPGInvServerSettings.ini; falls back to 1.0 when InvasionPro is not loaded
 function float GetInteractionScale() {
     local class<Object> C;
     local Object Obj;
+    local float Now;
+
+    if(ViewportOwner.Actor == None)
+        return 1.0;
+
+    Now = ViewportOwner.Actor.Level.TimeSeconds;
+    if(Now < NextInteractionScaleRead)
+        return CachedInteractionScale;
+    NextInteractionScaleRead = Now + InteractionScaleRefresh;
 
     C = class<Object>(DynamicLoadObject("InvasionProv1_7modV1.DorianRPGInvServerSettings", class'Class', true));
     if (C == None)
-        return 1.0;
-    Obj = new(None, "DorianRPGInvServerSettings") C;
-    return FClamp(float(Obj.GetPropertyText("InteractionScale")), 0.5, 2.0);
+        CachedInteractionScale = 1.0;
+    else
+    {
+        Obj = new(None, "DorianRPGInvServerSettings") C;
+        CachedInteractionScale = FClamp(float(Obj.GetPropertyText("InteractionScale")), 0.5, 2.0);
+    }
+    return CachedInteractionScale;
 }
 
 //Gets the team color for a PlayerReplicationInfo
