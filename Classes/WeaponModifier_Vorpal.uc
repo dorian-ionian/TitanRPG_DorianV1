@@ -2,6 +2,21 @@ class WeaponModifier_Vorpal extends RPGWeaponModifier;
 
 var localized string VorpalText;
 
+//primary fire interval (seconds) at or below which a weapon counts as rapid fire
+var config float RapidFireInterval;
+//multiplier on the Vorpal chance for rapid fire weapons
+var config float RapidFireVorpalScale;
+
+function bool IsRapidFire() {
+    local WeaponFire WF;
+
+    if(Weapon == None)
+        return false;
+
+    WF = Weapon.GetFireMode(0);
+    return WF != None && WF.FireRate > 0 && WF.FireRate <= RapidFireInterval;
+}
+
 replication {
     reliable if(Role == ROLE_Authority)
 		ClientReceiveVorpalConfig;
@@ -20,10 +35,15 @@ simulated function ClientReceiveVorpalConfig(int a) {
 
 function AdjustTargetDamage(out int Damage, int OriginalDamage, Pawn Injured, Pawn InstigatedBy, vector HitLocation, out vector Momentum, class<DamageType> DamageType) {
 	local RPGEffect Vorpal;
+	local float Chance;
 
 	Super.AdjustTargetDamage(Damage, OriginalDamage, Injured, InstigatedBy, HitLocation, Momentum, DamageType);
 
-	if(Damage > 0 && Rand(99) <= (Modifier - MinModifier))
+	Chance = float(Modifier - MinModifier);
+	if(IsRapidFire())
+		Chance *= RapidFireVorpalScale;
+
+	if(Damage > 0 && Rand(99) <= int(Chance))
 	{
 		Identify();
 	
@@ -43,6 +63,8 @@ simulated function BuildDescription() {
 defaultproperties
 {
 	VorpalText="$1 instant kill chance"
+	RapidFireInterval=0.2
+	RapidFireVorpalScale=0.5
 	DamageBonus=0.10
 	MinModifier=6
 	MaxModifier=10
