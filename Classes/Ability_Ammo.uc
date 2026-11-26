@@ -4,49 +4,31 @@ var bool bSuicided;
 
 //FragOps-style custom weapons keep their mag capacity in the WEAPON class
 //default AmmoCharge (FOGiveAmmo/FillToInitialAmmo read it and AddAmmo caps
-//at it) - track the original values so Arsenal can raise them and restore
-//them later (same convention as Ability_MaxAmmo)
-var array<class<Weapon> > ModifiedWeaponClasses;
-var array<int> OriginalAmmoCharge0;
-var array<int> OriginalAmmoCharge1;
+//at it). Class defaults are shared by every player, so the stock values come
+//from RPGRules (recorded once) - recording them per ability instance let a
+//second Arsenal owner take the first owner's raised value as its "original"
+//and stack on top of it.
 
-simulated event PostNetBeginPlay()
+function RPGRules GetRPGRules()
 {
-	Super.PostNetBeginPlay();
-	RestoreAmmoDefaults();
-}
-
-simulated event Destroyed()
-{
-	RestoreAmmoDefaults();
-	Super.Destroyed();
+	return class'RPGRules'.static.Instance(Level);
 }
 
 function int GetBaseAmmoCharge(class<Weapon> WeaponClass, int Mode)
 {
-	local int i, Charge;
+	local RPGRules Rules;
 
 	if(WeaponClass == None || Mode < 0 || Mode > 1)
 		return 0;
 
-	Charge = WeaponClass.default.AmmoCharge[Mode];
-	if(Charge <= 0)
+	if(WeaponClass.default.AmmoCharge[Mode] <= 0)
 		return 0; //this fire mode has no ammo
 
-	for(i = 0; i < ModifiedWeaponClasses.Length; i++)
-	{
-		if(ModifiedWeaponClasses[i] == WeaponClass)
-		{
-			if(Mode == 0)
-				return OriginalAmmoCharge0[i];
-			return OriginalAmmoCharge1[i];
-		}
-	}
+	Rules = GetRPGRules();
+	if(Rules == None)
+		return WeaponClass.default.AmmoCharge[Mode];
 
-	ModifiedWeaponClasses[ModifiedWeaponClasses.Length] = WeaponClass;
-	OriginalAmmoCharge0[OriginalAmmoCharge0.Length] = WeaponClass.default.AmmoCharge[0];
-	OriginalAmmoCharge1[OriginalAmmoCharge1.Length] = WeaponClass.default.AmmoCharge[1];
-	return Charge;
+	return Rules.GetOriginalAmmoCharge(WeaponClass, Mode);
 }
 
 function SetWeaponChargeMax(class<Weapon> WeaponClass, int Mode, int NewMax)
@@ -57,26 +39,6 @@ function SetWeaponChargeMax(class<Weapon> WeaponClass, int Mode, int NewMax)
 	{
 		WeaponClass.default.AmmoCharge[Mode] = NewMax;
 	}
-}
-
-function RestoreAmmoDefaults()
-{
-	local int i;
-
-	for(i = 0; i < ModifiedWeaponClasses.Length; i++)
-	{
-		if(ModifiedWeaponClasses[i] != None)
-		{
-			if(ModifiedWeaponClasses[i].default.AmmoCharge[0] > OriginalAmmoCharge0[i])
-				ModifiedWeaponClasses[i].default.AmmoCharge[0] = OriginalAmmoCharge0[i];
-			if(ModifiedWeaponClasses[i].default.AmmoCharge[1] > OriginalAmmoCharge1[i])
-				ModifiedWeaponClasses[i].default.AmmoCharge[1] = OriginalAmmoCharge1[i];
-		}
-	}
-
-	ModifiedWeaponClasses.Length = 0;
-	OriginalAmmoCharge0.Length = 0;
-	OriginalAmmoCharge1.Length = 0;
 }
 
 function ModifyGrantedWeaponAmmo(class<Weapon> WeaponClass, out int Ammo1, out int Ammo2)
