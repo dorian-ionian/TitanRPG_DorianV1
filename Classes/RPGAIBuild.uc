@@ -49,10 +49,10 @@ function InitBot(Bot Bot)
 function Build(RPGPlayerReplicationInfo RPRI)
 {
 	local AIBuildAction Action;
-	local RPGAbility BuyAbility;
+	local RPGAbility BuyAbility, LastBought, LastCandidate;
 	local array<RPGAbility> Candidates;
-	local int i, Cost;
-	local bool bUnfinished;
+	local int i, j, Cost;
+	local bool bUnfinished, bDuplicate;
 	
 	//make totally sure it's a bot here...
 	if(AIController(RPRI.Controller) == None)
@@ -61,6 +61,7 @@ function Build(RPGPlayerReplicationInfo RPRI)
 	while(RPRI.PointsAvailable > 0)
 	{
 		Candidates.Length = 0;
+		LastCandidate = None;
 		bUnfinished = false;
 
 		//collect every affordable entry that hasn't reached its target level yet
@@ -79,9 +80,32 @@ function Build(RPGPlayerReplicationInfo RPRI)
 
 			bUnfinished = true;
 			Cost = BuyAbility.Cost();
-			if(Cost > 0 && Cost <= RPRI.PointsAvailable)
+			if(Cost <= 0 || Cost > RPRI.PointsAvailable)
+				continue;
+
+			//the ability bought last is only offered when nothing else is affordable
+			if(BuyAbility == LastBought)
+			{
+				LastCandidate = BuyAbility;
+				continue;
+			}
+
+			//each ability gets one slot, however many BuildActions entries name it
+			bDuplicate = false;
+			for(j = 0; j < Candidates.Length; j++)
+			{
+				if(Candidates[j] == BuyAbility)
+				{
+					bDuplicate = true;
+					break;
+				}
+			}
+			if(!bDuplicate)
 				Candidates[Candidates.Length] = BuyAbility;
 		}
+
+		if(Candidates.Length == 0 && LastCandidate != None)
+			Candidates[0] = LastCandidate;
 
 		if(Candidates.Length == 0)
 		{
@@ -97,6 +121,7 @@ function Build(RPGPlayerReplicationInfo RPRI)
 			break;
 		}
 
+		LastBought = BuyAbility;
 		RPRI.ModifyStats();
 	}
 }
