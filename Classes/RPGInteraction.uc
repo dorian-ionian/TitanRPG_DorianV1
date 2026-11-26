@@ -17,6 +17,15 @@ var RPGCharSettings CharSettings;
 
 var float TimeSeconds;
 
+//Per-frame HUD lookups are cached and refreshed on a timer
+var float NextOwnedMonsterScan;
+var array<FriendlyPawnReplicationInfo> OwnedMonsterCache;
+var float NextArtifactScan;
+var array<RPGArtifact> ArtifactCache;
+var float NextWeaponModScan;
+var Weapon WeaponModWeapon;
+var RPGWeaponModifier WeaponModCache;
+
 var bool bMenuEnabled; //false as long as server settings were not yet received
 
 var bool bUpdateCanvas;
@@ -468,6 +477,7 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 	local FriendlyPawnReplicationInfo FPRI;
 	local string TierText, MonsterName;
 	local float TierXL, NameXL, SpaceXL, MaxTierXL, MaxNameXL, YL, ColX, Y;
+	local int i;
 
 	if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None)
 		return;
@@ -479,9 +489,21 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 
 	C.TextSize(" ", SpaceXL, YL);
 
-	foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
+	if(TimeSeconds >= NextOwnedMonsterScan)
 	{
-		if(!GetOwnedMonsterRow(FPRI, TierText, MonsterName))
+		NextOwnedMonsterScan = TimeSeconds + 0.5;
+		OwnedMonsterCache.Length = 0;
+		foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
+		{
+			if(FPRI.bMonster && FPRI.Master == ViewportOwner.Actor.PlayerReplicationInfo)
+				OwnedMonsterCache[OwnedMonsterCache.Length] = FPRI;
+		}
+	}
+
+	for(i = 0; i < OwnedMonsterCache.Length; i++)
+	{
+		FPRI = OwnedMonsterCache[i];
+		if(FPRI == None || !GetOwnedMonsterRow(FPRI, TierText, MonsterName))
 			continue;
 		C.TextSize(TierText, TierXL, YL);
 		C.TextSize(MonsterName, NameXL, YL);
@@ -494,9 +516,10 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 		ColX = Right - (MaxTierXL + SpaceXL + MaxNameXL);
 		Y = Top;
 
-		foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
+		for(i = 0; i < OwnedMonsterCache.Length; i++)
 		{
-			if(!GetOwnedMonsterRow(FPRI, TierText, MonsterName))
+			FPRI = OwnedMonsterCache[i];
+			if(FPRI == None || !GetOwnedMonsterRow(FPRI, TierText, MonsterName))
 				continue;
 			C.TextSize(TierText, TierXL, YL);
 
@@ -878,6 +901,14 @@ function PostRender(Canvas Canvas)
 		{
 			Size = ArtifactIconSize;
 			
+			if(TimeSeconds >= NextArtifactScan || ArtifactCache.Length != RPRI.ArtifactOrder.Length)
+			{
+				NextArtifactScan = TimeSeconds + 0.25;
+				ArtifactCache.Length = RPRI.ArtifactOrder.Length;
+				for(i = 0; i < RPRI.ArtifactOrder.Length; i++)
+					ArtifactCache[i] = RPGArtifact(P.FindInventoryType(RPRI.ArtifactOrder[i].ArtifactClass));
+			}
+
 			i = Min(Settings.IconsPerRow, Artifacts.Length);
 			if(i > 10)
 				Size /= float(i) / 10.f;
@@ -888,7 +919,7 @@ function PostRender(Canvas Canvas)
 			for(i = 0; i < RPRI.ArtifactOrder.Length; i++)
 			{
 				AClass = RPRI.ArtifactOrder[i].ArtifactClass;
-				A = RPGArtifact(P.FindInventoryType(AClass));
+				A = ArtifactCache[i];
 				
 				if(AClass != None && !RPRI.ArtifactOrder[i].bNeverShow && ((A != None && A.class == AClass) || RPRI.ArtifactOrder[i].bShowAlways))
 				{
@@ -1026,9 +1057,14 @@ function PostRender(Canvas Canvas)
 		}
 		
 		//Weapon Modifier
-		WM = class'RPGWeaponModifier'.static.GetFor(P.Weapon);
-		if(WM != None)
-			WM.PostRender(Canvas);
+		if(P.Weapon != WeaponModWeapon || TimeSeconds >= NextWeaponModScan)
+		{
+			NextWeaponModScan = TimeSeconds + 0.25;
+			WeaponModWeapon = P.Weapon;
+			WeaponModCache = class'RPGWeaponModifier'.static.GetFor(P.Weapon);
+		}
+		if(WeaponModCache != None)
+			WeaponModCache.PostRender(Canvas);
 	}
 	
 	//Draw Artifact Selection
