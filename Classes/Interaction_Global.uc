@@ -104,6 +104,7 @@ function PostRender(Canvas C) {
 //Player and bot pawns do not have a FriendlyPawnReplicationInfo, so their
 //mastery titles are drawn by walking the pawns directly.
 function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
+    local Controller Ctl;
     local Pawn P;
     local vector ScreenPos, TopPos;
     local float Dist;
@@ -116,8 +117,10 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
 
     MedicLevel = GetMedicLevel();
 
-    foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
-        if(P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
+    //Walk the controllers (players and bots) instead of every pawn in the level. Pawns are read live each frame and never cached, because a cached reference goes stale when the pawn is destroyed.
+    for(Ctl = ViewportOwner.Actor.Level.ControllerList; Ctl != None; Ctl = Ctl.NextController) {
+        P = Ctl.Pawn;
+        if(P == None || P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
             continue;
         }
         if(P.PlayerReplicationInfo.Team != ViewportOwner.Actor.PlayerReplicationInfo.Team) {
