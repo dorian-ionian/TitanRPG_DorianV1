@@ -465,12 +465,14 @@ static function Weapon ForceGiveTo(Pawn Other, Weapon W, optional WeaponPickup P
         if(Pivot == First && Prev.Inventory == W && W.Inventory == None) {
             //put to end of the chain
             W.Inventory = Pivot.Inventory;
+            Pivot.Inventory = None;
             
-            for(Inv = Pivot.Inventory; Inv != None; Inv = Inv.Inventory) {
+            //walk from the new weapon, so an empty tail doesn't overwrite it
+            Prev = W;
+            for(Inv = W.Inventory; Inv != None; Inv = Inv.Inventory) {
                 Prev = Inv;
             }
             
-            Pivot.Inventory = None;
             Prev.Inventory = Pivot;
         } else {
             if(W.Inventory != None) {

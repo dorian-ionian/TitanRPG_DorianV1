@@ -125,20 +125,28 @@ simulated function PostBeginPlay()
 function StripOut()
 {
 	local Inventory Inv;
+	local Pawn Holder;
 
-	//Remove me.
-	for(Inv = Instigator.Inventory; Inv != None && Inv.Inventory != Self; Inv = Inv.Inventory);
-	
-	//flag the relinked node so clients receive the new chain
-	if(Inv != None)
+	//Unlink from the pawn that actually holds me. Instigator can point at another pawn,
+	//and relinking against the wrong chain drops every item after this artifact.
+	Holder = Pawn(Owner);
+	if(Holder == None)
+		return;
+
+	if(Holder.Inventory == Self)
 	{
-		Inv.Inventory = Self.Inventory;
-		Inv.NetUpdateTime = Level.TimeSeconds - 1;
+		Holder.Inventory = Self.Inventory;
+		Holder.NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	else
 	{
-		Instigator.Inventory = Self.Inventory;
-		Instigator.NetUpdateTime = Level.TimeSeconds - 1;
+		for(Inv = Holder.Inventory; Inv != None && Inv.Inventory != Self; Inv = Inv.Inventory);
+		if(Inv == None)
+			return;
+
+		//flag the relinked node so clients receive the new chain
+		Inv.Inventory = Self.Inventory;
+		Inv.NetUpdateTime = Level.TimeSeconds - 1;
 	}
 	
 	Self.Inventory = None;
@@ -150,17 +158,22 @@ function SortIn()
 	local bool bAdded;
 	local Inventory Inv, Prev;
 	local int OrderEntry, i;
+	local Pawn Holder;
+
+	Holder = Pawn(Owner);
+	if(Holder == None)
+		return;
 
 	if(InstigatorRPRI != None)
 	{
 		//Re-add me.
-		if(Instigator.Inventory != None)
+		if(Holder.Inventory != None)
 		{
 			//Sort the new artifact in so the artifact order is correct.
 			OrderEntry = InstigatorRPRI.FindOrderEntry(default.class);
 			if(OrderEntry >= 0)
 			{
-				for(Inv = Instigator.Inventory; Inv != None; Inv = Inv.Inventory)
+				for(Inv = Holder.Inventory; Inv != None; Inv = Inv.Inventory)
 				{
 					if(Inv.IsA('RPGArtifact'))
 					{
@@ -174,8 +187,8 @@ function SortIn()
 								Prev.Inventory = Self;
                                 Prev.NetUpdateTime = Level.TimeSeconds - 1;
 							} else {
-								Instigator.Inventory = Self;
-                                Instigator.NetUpdateTime = Level.TimeSeconds - 1;
+								Holder.Inventory = Self;
+                                Holder.NetUpdateTime = Level.TimeSeconds - 1;
                             }
 							
 							bAdded = true;
@@ -191,14 +204,14 @@ function SortIn()
 	if(!bAdded)
 	{
 		//Add to end instead
-		for(Inv = Instigator.Inventory; Inv != None && Inv.Inventory != None; Inv = Inv.Inventory);
+		for(Inv = Holder.Inventory; Inv != None && Inv.Inventory != None; Inv = Inv.Inventory);
 
 		if(Inv != None) {
 			Inv.Inventory = Self;
             Inv.NetUpdateTime = Level.TimeSeconds - 1;
 		} else {
-			Instigator.Inventory = Self;
-            Instigator.NetUpdateTime = Level.TimeSeconds - 1;
+			Holder.Inventory = Self;
+            Holder.NetUpdateTime = Level.TimeSeconds - 1;
         }
 	}
 }
