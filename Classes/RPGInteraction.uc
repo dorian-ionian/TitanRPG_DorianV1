@@ -19,6 +19,14 @@ struct DamageSnapshot
 	var float ScatterX, ScatterY;
 };
 
+//Copied text and colour of one owned monster, so no FriendlyPawnReplicationInfo is held across frames
+struct OwnedMonsterRow
+{
+	var string TierText;
+	var string MonsterName;
+	var Color TierColor;
+};
+
 var RPGPlayerReplicationInfo RPRI;
 var float NextRPRITry;
 var bool bWarnedNoRPRI;
@@ -30,14 +38,9 @@ var RPGCharSettings CharSettings;
 
 var float TimeSeconds;
 
-//Per-frame HUD lookups are cached and refreshed on a timer
+//Owned monster rows are copied values refreshed on a timer; no object references are kept across frames
 var float NextOwnedMonsterScan;
-var array<FriendlyPawnReplicationInfo> OwnedMonsterCache;
-var float NextArtifactScan;
-var array<RPGArtifact> ArtifactCache;
-var float NextWeaponModScan;
-var Weapon WeaponModWeapon;
-var RPGWeaponModifier WeaponModCache;
+var array<OwnedMonsterRow> OwnedMonsterRows;
 
 var bool bMenuEnabled; //false as long as server settings were not yet received
 
@@ -509,21 +512,23 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 	if(TimeSeconds >= NextOwnedMonsterScan)
 	{
 		NextOwnedMonsterScan = TimeSeconds + 0.5;
-		OwnedMonsterCache.Length = 0;
+		OwnedMonsterRows.Length = 0;
 		foreach ViewportOwner.Actor.DynamicActors(class'FriendlyPawnReplicationInfo', FPRI)
 		{
-			if(FPRI.bMonster && FPRI.Master == ViewportOwner.Actor.PlayerReplicationInfo)
-				OwnedMonsterCache[OwnedMonsterCache.Length] = FPRI;
+			if(GetOwnedMonsterRow(FPRI, TierText, MonsterName))
+			{
+				OwnedMonsterRows.Length = OwnedMonsterRows.Length + 1;
+				OwnedMonsterRows[OwnedMonsterRows.Length - 1].TierText = TierText;
+				OwnedMonsterRows[OwnedMonsterRows.Length - 1].MonsterName = MonsterName;
+				OwnedMonsterRows[OwnedMonsterRows.Length - 1].TierColor = class'Ability_WeaponProficiency'.static.GetTierColor(FPRI.MonsterTier);
+			}
 		}
 	}
 
-	for(i = 0; i < OwnedMonsterCache.Length; i++)
+	for(i = 0; i < OwnedMonsterRows.Length; i++)
 	{
-		FPRI = OwnedMonsterCache[i];
-		if(FPRI == None || !GetOwnedMonsterRow(FPRI, TierText, MonsterName))
-			continue;
-		C.TextSize(TierText, TierXL, YL);
-		C.TextSize(MonsterName, NameXL, YL);
+		C.TextSize(OwnedMonsterRows[i].TierText, TierXL, YL);
+		C.TextSize(OwnedMonsterRows[i].MonsterName, NameXL, YL);
 		MaxTierXL = FMax(MaxTierXL, TierXL);
 		MaxNameXL = FMax(MaxNameXL, NameXL);
 	}
@@ -533,19 +538,16 @@ function DrawOwnedMonsterList(Canvas C, float Right, float Top)
 		ColX = Right - (MaxTierXL + SpaceXL + MaxNameXL);
 		Y = Top;
 
-		for(i = 0; i < OwnedMonsterCache.Length; i++)
+		for(i = 0; i < OwnedMonsterRows.Length; i++)
 		{
-			FPRI = OwnedMonsterCache[i];
-			if(FPRI == None || !GetOwnedMonsterRow(FPRI, TierText, MonsterName))
-				continue;
-			C.TextSize(TierText, TierXL, YL);
+			C.TextSize(OwnedMonsterRows[i].TierText, TierXL, YL);
 
-			C.DrawColor = class'Ability_WeaponProficiency'.static.GetTierColor(FPRI.MonsterTier);
+			C.DrawColor = OwnedMonsterRows[i].TierColor;
 			C.SetPos(ColX + MaxTierXL - TierXL, Y);
-			C.DrawText(TierText);
+			C.DrawText(OwnedMonsterRows[i].TierText);
 			C.DrawColor = WhiteColor;
 			C.SetPos(ColX + MaxTierXL + SpaceXL, Y);
-			C.DrawText(MonsterName);
+			C.DrawText(OwnedMonsterRows[i].MonsterName);
 			Y += YL + 1;
 		}
 	}
@@ -939,14 +941,6 @@ function PostRender(Canvas Canvas)
 		else
 		{
 			Size = ArtifactIconSize;
-			
-			if(TimeSeconds >= NextArtifactScan || ArtifactCache.Length != RPRI.ArtifactOrder.Length)
-			{
-				NextArtifactScan = TimeSeconds + 0.25;
-				ArtifactCache.Length = RPRI.ArtifactOrder.Length;
-				for(i = 0; i < RPRI.ArtifactOrder.Length; i++)
-					ArtifactCache[i] = RPGArtifact(P.FindInventoryType(RPRI.ArtifactOrder[i].ArtifactClass));
-			}
 
 			i = Min(Settings.IconsPerRow, Artifacts.Length);
 			if(i > 10)
@@ -958,7 +952,9 @@ function PostRender(Canvas Canvas)
 			for(i = 0; i < RPRI.ArtifactOrder.Length; i++)
 			{
 				AClass = RPRI.ArtifactOrder[i].ArtifactClass;
-				A = ArtifactCache[i];
+				A = None;
+				if(AClass != None)
+					A = RPGArtifact(P.FindInventoryType(AClass));
 				
 				if(AClass != None && !RPRI.ArtifactOrder[i].bNeverShow && ((A != None && A.class == AClass) || RPRI.ArtifactOrder[i].bShowAlways))
 				{
@@ -1096,14 +1092,9 @@ function PostRender(Canvas Canvas)
 		}
 		
 		//Weapon Modifier
-		if(P.Weapon != WeaponModWeapon || TimeSeconds >= NextWeaponModScan)
-		{
-			NextWeaponModScan = TimeSeconds + 0.25;
-			WeaponModWeapon = P.Weapon;
-			WeaponModCache = class'RPGWeaponModifier'.static.GetFor(P.Weapon);
-		}
-		if(WeaponModCache != None)
-			WeaponModCache.PostRender(Canvas);
+		WM = class'RPGWeaponModifier'.static.GetFor(P.Weapon);
+		if(WM != None)
+			WM.PostRender(Canvas);
 	}
 	
 	//Draw Artifact Selection
