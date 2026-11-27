@@ -5,9 +5,10 @@ class Interaction_Global extends RPGBaseInteraction;
 
 var array<FriendlyPawnReplicationInfo> FriendlyPawns;
 
-//Filled by the first teammate lookup miss in a frame, cleared at the end of DrawPlayerMasteryTitles
-var array<RPGPlayerReplicationInfo> FrameRPRIs;
-var bool bFrameRPRIsWalked;
+//Refreshed a few times a second by RefreshMasteryCache so PostRender does not walk every actor each frame
+var array<Pawn> MasteryPawns;
+var array<RPGPlayerReplicationInfo> RPRICache;
+var float NextMasteryScan;
 
 function PostRender(Canvas C) {
     local int i;
@@ -112,17 +113,21 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
     local vector ScreenPos, TopPos;
     local float Dist;
     local string Title, Title2, Word, Word2;
-    local int Tier, Tier2, MedicLevel;
+    local int Tier, Tier2, MedicLevel, i;
 
     if(ViewportOwner.Actor == None || ViewportOwner.Actor.PlayerReplicationInfo == None) {
         return;
     }
 
     MedicLevel = GetMedicLevel();
-    bFrameRPRIsWalked = false;
+    if(ViewportOwner.Actor.Level.TimeSeconds >= NextMasteryScan) {
+        NextMasteryScan = ViewportOwner.Actor.Level.TimeSeconds + 0.25;
+        RefreshMasteryCache();
+    }
 
-    foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
-        if(P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
+    for(i = 0; i < MasteryPawns.Length; i++) {
+        P = MasteryPawns[i];
+        if(P == None || P == ViewportOwner.Actor.Pawn || P.PlayerReplicationInfo == None || P.bDeleteMe) {
             continue;
         }
         if(P.PlayerReplicationInfo.Team != ViewportOwner.Actor.PlayerReplicationInfo.Team) {
@@ -156,7 +161,24 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
         C.FontScaleX = 1.0f;
         C.FontScaleY = 1.0f;
     }
-    FrameRPRIs.Length = 0;
+}
+
+//Collects the pawns and RPRIs that the mastery titles and lookups use. Called on a timer, not per frame.
+function RefreshMasteryCache() {
+    local Pawn P;
+    local RPGPlayerReplicationInfo RPRI;
+
+    MasteryPawns.Length = 0;
+    foreach ViewportOwner.Actor.DynamicActors(class'Pawn', P) {
+        if(P != ViewportOwner.Actor.Pawn && P.PlayerReplicationInfo != None && !P.bDeleteMe) {
+            MasteryPawns[MasteryPawns.Length] = P;
+        }
+    }
+
+    RPRICache.Length = 0;
+    foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
+        RPRICache[RPRICache.Length] = RPRI;
+    }
 }
 
 //Monster label reads "Owner's Tier Monster" in one line: white, with only the tier word coloured
@@ -238,6 +260,9 @@ function DrawMasteryLine(Canvas C, string Title, string Word, int Tier, vector T
 event NotifyLevelChange() {
     Super.NotifyLevelChange();
     FriendlyPawns.Length = 0;
+    MasteryPawns.Length = 0;
+    RPRICache.Length = 0;
+    NextMasteryScan = 0;
 }
 
 function bool GetMasteryTitles(PlayerReplicationInfo PRI, out string Title, out string Word, out int Tier, out string Title2, out string Word2, out int Tier2) {
@@ -265,8 +290,7 @@ function bool GetMasteryTitles(PlayerReplicationInfo PRI, out string Title, out 
 }
 
 //Clients don't always get the PRI's CustomReplicationInfo link for other players,
-//so fall back to finding the RPRI whose replicated PRI matches.
-//The fallback list is walked at most once per frame, not once per teammate.
+//so fall back to the RPRI cache, whose replicated PRI matches.
 function RPGPlayerReplicationInfo GetRPRIFor(PlayerReplicationInfo PRI) {
     local RPGPlayerReplicationInfo RPRI;
     local int i;
@@ -275,15 +299,9 @@ function RPGPlayerReplicationInfo GetRPRIFor(PlayerReplicationInfo PRI) {
     if(RPRI != None) {
         return RPRI;
     }
-    if(!bFrameRPRIsWalked) {
-        bFrameRPRIsWalked = true;
-        foreach ViewportOwner.Actor.DynamicActors(class'RPGPlayerReplicationInfo', RPRI) {
-            FrameRPRIs[FrameRPRIs.Length] = RPRI;
-        }
-    }
-    for(i = 0; i < FrameRPRIs.Length; i++) {
-        if(FrameRPRIs[i].PRI == PRI) {
-            return FrameRPRIs[i];
+    for(i = 0; i < RPRICache.Length; i++) {
+        if(RPRICache[i] != None && RPRICache[i].PRI == PRI) {
+            return RPRICache[i];
         }
     }
     return None;

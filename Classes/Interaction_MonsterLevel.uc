@@ -8,13 +8,19 @@ class Interaction_MonsterLevel extends RPGBaseInteraction;
 var Interaction_Awareness AwarenessInteraction;
 var Color RedColor;
 
+//Refreshed a few times a second; PostRender does not walk the actors every frame
+var array<RPGMonsterLevelInv> MonsterInvs;
+var float NextMonsterScan;
+//Height of the awareness HP text, measured once per frame in PostRender
+var float HPTextH;
+
 //Screen Y of the top edge of the Interaction_Awareness stack for this pawn
 //(health bar, plus the HP text that sits above it). Mirrors that class's geometry.
 //Mirrors Interaction_Awareness geometry for the enemy anchor P (the vehicle for vehicle monsters, otherwise the pawn)
 function float GetAwarenessTop(Canvas C, Pawn P, float Dist)
 {
 	local vector AnchorPos;
-	local float Height, BarH, XL, TextH;
+	local float Height, BarH;
 
 	Height = P.CollisionHeight * FClamp(0.85f + Dist * 0.85f / TeamBeaconMaxDist, 1.1f, 1.75f);
 	AnchorPos = C.WorldToScreen(P.Location + Height * vect(0, 0, 0.75));
@@ -24,11 +30,8 @@ function float GetAwarenessTop(Canvas C, Pawn P, float Dist)
 		Height *= 1.75;
 	BarH = 2.0f * Height;
 
-	//HP text height in the canvas font the awareness interactions draw with
-	C.StrLen("100 HP (100%)", XL, TextH);
-
 	//Bar centre sits BarH + 2 above the anchor, the HP text sits above the bar's top edge
-	return AnchorPos.Y - 1.5f * BarH - 4.0f - TextH;
+	return AnchorPos.Y - 1.5f * BarH - 4.0f - HPTextH;
 }
 
 function PostRender(Canvas C)
@@ -39,7 +42,7 @@ function PostRender(Canvas C)
 	local float Dist, Height, XL, YL, Scale, AwareTop, RecordedTop;
 	local string Text;
 	local Pawn Anchor;
-	local Font SavedFont;
+	local Font SavedFont, MonsterFont;
 	local int i;
 
 	if(ViewportOwner.Actor == None)
@@ -60,9 +63,28 @@ function PostRender(Canvas C)
 		}
 	}
 
-	foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
+	//HP text height in the canvas font the awareness interactions draw with (the canvas font is SavedFont here)
+	C.StrLen("100 HP (100%)", XL, HPTextH);
+
+	//Resolution-scaled font is the same for every monster this frame
+	MonsterFont = class'UT2MidGameFont'.static.GetMidGameFont(int(C.ClipX * InteractionScale));
+	if(MonsterFont == None)
+		MonsterFont = C.TinyFont;
+
+	if(ViewportOwner.Actor.Level.TimeSeconds >= NextMonsterScan)
 	{
-		if(Inv.MyMonster == None || Inv.MonsterLevel <= 0)
+		NextMonsterScan = ViewportOwner.Actor.Level.TimeSeconds + 0.25;
+		MonsterInvs.Length = 0;
+		foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
+		{
+			MonsterInvs[MonsterInvs.Length] = Inv;
+		}
+	}
+
+	for(i = 0; i < MonsterInvs.Length; i++)
+	{
+		Inv = MonsterInvs[i];
+		if(Inv == None || Inv.MyMonster == None || Inv.MonsterLevel <= 0)
 			continue;
 
 		//Vehicle monsters are labelled on their vehicle shell
@@ -106,9 +128,7 @@ function PostRender(Canvas C)
 		C.Style = 9; //STY_AlphaZ
 		//Resolution-scaled font - same as InvasionPro's floating pet
 		//names (UT2003Fonts, which TinyFont also comes from)
-		C.Font = class'UT2MidGameFont'.static.GetMidGameFont(int(C.ClipX * InteractionScale));
-		if(C.Font == None)
-			C.Font = C.TinyFont;
+		C.Font = MonsterFont;
 		C.FontScaleX = Scale;
 		C.FontScaleY = Scale;
 
