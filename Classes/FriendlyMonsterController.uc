@@ -108,6 +108,8 @@ function SetMaster(Controller NewMaster)
 
 function Destroyed()
 {
+    if(Pawn != None && Pawn.Health > 0)
+        log("TitanRPG: pet controller destroyed with live pawn left behind (" $ Pawn.Class $ ", health=" $ Pawn.Health $ ")", 'TitanRPG');
     if(PlayerReplicationInfo != None)
         PlayerReplicationInfo.Destroy();
     //if(Effect != None)
@@ -258,6 +260,10 @@ event Tick(float dt) {
     Super.Tick(dt);
 
     if(Pawn == None || Pawn.Controller != Self || Pawn.bPendingDelete) {
+        if(Pawn == None)
+            log("TitanRPG: pet controller self-destroy, pawn is None", 'TitanRPG');
+        else
+            log("TitanRPG: pet controller self-destroy, pawn " $ Pawn.Class $ " controller=" $ Pawn.Controller $ " pendingDelete=" $ Pawn.bPendingDelete, 'TitanRPG');
         Destroy();
         return;
     }
@@ -287,6 +293,7 @@ event Tick(float dt) {
     if(OldAgeTime > 0 && Level.TimeSeconds >= OldAgeTime)
     {
         OldAgeTime = 0;
+        log("TitanRPG: pet suicide, summon lifetime over (" $ Pawn.Class $ ")", 'TitanRPG');
         BroadcastOldAge();
         Pawn.Suicide();
         return;
@@ -300,6 +307,7 @@ event Tick(float dt) {
         !SameTeamAs(Master)
     )
     {
+        log("TitanRPG: pet suicide, no valid master (" $ Pawn.Class $ ", master=" $ Master $ ")", 'TitanRPG');
         Pawn.Suicide();
             return;
     }
@@ -308,6 +316,7 @@ event Tick(float dt) {
         //if my master died, test if I should as well
         if(MasterRPRI.bMonstersDie && (Master.Pawn == None || Master.Pawn.Health <= 0))
         {
+            log("TitanRPG: pet suicide, master died with bMonstersDie (" $ Pawn.Class $ ")", 'TitanRPG');
             Pawn.Suicide();
             return;
         }
