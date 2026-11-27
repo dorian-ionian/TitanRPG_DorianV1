@@ -2610,6 +2610,7 @@ simulated function ProcessProjectileMods() {
     i = 0;
     while(i < ModifyProjectiles.Length) {
         Mod = ModifyProjectiles[i];
+        Closest = None;
 
         foreach CollidingActors(class'Projectile', Proj, PROJ_SEARCH_RADIUS, Mod.Location) {
             if(Proj.Tag != Mod.Flag && Proj.class == Mod.Type && Proj.Instigator == Mod.Instigator) {

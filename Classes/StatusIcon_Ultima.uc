@@ -4,6 +4,9 @@ var Ability_Ultima Ultima;
 
 function Tick(float dt)
 {
+	if(RPRI == None) {
+		return;
+	}
 	Ultima = Ability_Ultima(RPRI.GetAbility(class'Ability_Ultima'));
 	bShouldTick = (Ultima == None);
 }

@@ -671,6 +671,10 @@ static function ModifyProjectileSpeed(Projectile Proj, float Multiplier, name Fl
     local RPGPlayerReplicationInfo RPRI;
     local vector ClientLocation;
 
+    if(Proj == None) {
+        return;
+    }
+
     Proj.Speed *= Multiplier;
     Proj.MaxSpeed *= Multiplier;
     Proj.Velocity *= Multiplier;

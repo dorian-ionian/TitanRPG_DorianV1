@@ -36,7 +36,6 @@ simulated function bool CheckMaxEffectDistance(PlayerController P, vector SpawnL
 simulated function Tick(float dt)
 {
     local float LocDiff, RotDiff, WiggleMe;
-    local Vector BeamDir;
 	
     if(Role == ROLE_Authority && (Source == None))
     {
@@ -50,8 +49,11 @@ simulated function Tick(float dt)
     }
     
     // set beam start location
-    SetBeamLocation();
-    BeamDir = SetBeamRotation();
+    // Source replicates only at initial net sync, so it can be None on a client for a while.
+    if(Source != None) {
+        SetBeamLocation();
+        SetBeamRotation();
+    }
 
     if ( Level.bDropDetail || Level.DetailMode == DM_Low )
     {

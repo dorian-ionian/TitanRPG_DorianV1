@@ -4,6 +4,9 @@ var Ability_VehicleEject EjectorSeat;
 
 function Tick(float dt)
 {
+	if(RPRI == None) {
+		return;
+	}
 	EjectorSeat = Ability_VehicleEject(RPRI.GetAbility(class'Ability_VehicleEject'));
 	bShouldTick = (EjectorSeat == None);
 }
