@@ -8,7 +8,6 @@ var array<FriendlyPawnReplicationInfo> FriendlyPawns;
 //Refreshed a few times a second by RefreshMasteryCache so PostRender does not walk every actor each frame
 var array<Pawn> MasteryPawns;
 var array<RPGPlayerReplicationInfo> RPRICache;
-var float NextMasteryScan;
 
 function PostRender(Canvas C) {
     local int i;
@@ -120,10 +119,8 @@ function DrawPlayerMasteryTitles(Canvas C, float FarAwayInv) {
     }
 
     MedicLevel = GetMedicLevel();
-    if(ViewportOwner.Actor.Level.TimeSeconds >= NextMasteryScan) {
-        NextMasteryScan = ViewportOwner.Actor.Level.TimeSeconds + 0.25;
-        RefreshMasteryCache();
-    }
+    //Rebuilt every frame: a pawn destroyed during tick must not stay in the cache into the draw
+    RefreshMasteryCache();
 
     for(i = 0; i < MasteryPawns.Length; i++) {
         P = MasteryPawns[i];
@@ -262,7 +259,6 @@ event NotifyLevelChange() {
     FriendlyPawns.Length = 0;
     MasteryPawns.Length = 0;
     RPRICache.Length = 0;
-    NextMasteryScan = 0;
 }
 
 function bool GetMasteryTitles(PlayerReplicationInfo PRI, out string Title, out string Word, out int Tier, out string Title2, out string Word2, out int Tier2) {
