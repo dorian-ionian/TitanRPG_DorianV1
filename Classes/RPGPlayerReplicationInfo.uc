@@ -1782,6 +1782,7 @@ function LoadData(RPGData Data)
 	DataObject = Data;
 	RPGName = string(Data.Name);
 	MergeMonsterKillEntries();
+	MergeWeaponKillEntries();
 
 	RPGLevel = DataObject.LV;
 	PointsAvailable = DataObject.PA;
@@ -1918,7 +1919,7 @@ function AddWeaponKill(class<Weapon> WeaponClass)
 	Alias = string(WeaponClass);
 	for(i = 0; i < DataObject.WP.Length; i++)
 	{
-		if(DataObject.WP[i] == Alias)
+		if(DataObject.WP[i] ~= Alias)
 			break;
 	}
 	if(i == DataObject.WP.Length)
@@ -2023,6 +2024,25 @@ function MergeMonsterKillEntries()
 				DataObject.MK[i] += DataObject.MK[j];
 				DataObject.MP.Remove(j, 1);
 				DataObject.MK.Remove(j, 1);
+			}
+		}
+	}
+}
+
+//Folds weapon kill entries saved under a differently cased class name into the first one
+function MergeWeaponKillEntries()
+{
+	local int i, j;
+
+	for(i = 0; i < DataObject.WP.Length; i++)
+	{
+		for(j = DataObject.WP.Length - 1; j > i; j--)
+		{
+			if(DataObject.WP[j] ~= DataObject.WP[i])
+			{
+				DataObject.WK[i] += DataObject.WK[j];
+				DataObject.WP.Remove(j, 1);
+				DataObject.WK.Remove(j, 1);
 			}
 		}
 	}
@@ -2230,7 +2250,7 @@ function int GetWeaponKillsByAlias(string Alias)
 
 	for(i = 0; i < DataObject.WP.Length; i++)
 	{
-		if(DataObject.WP[i] == Alias)
+		if(DataObject.WP[i] ~= Alias)
 			return DataObject.WK[i];
 	}
 	return 0;
