@@ -63,13 +63,13 @@ function ScoreKill(Controller Killed, class<DamageType> DamageType) {
                     if(Inv.IsA('Weapon')) {
                         W = Weapon(Inv);
                         if(W.GetAmmoClass(0) != None && W.AmmoAmount(0) < W.GetAmmoClass(0).default.InitialAmount) {
-                            if(W.GetAmmoClass(0).default.PickupClass != None) {
+                            if(W.GetAmmoClass(0).default.PickupClass != None && IsDroppablePickup(W.GetAmmoClass(0).default.PickupClass)) {
                                 Potentials[Potentials.Length] = W.GetAmmoClass(0).default.PickupClass;
                             }
                         }
                         
                         if(W.GetAmmoClass(1) != None && W.GetAmmoClass(1) != W.GetAmmoClass(0) && W.AmmoAmount(1) < W.GetAmmoClass(1).default.InitialAmount) {
-                            if(W.GetAmmoClass(1).default.PickupClass != None) {
+                            if(W.GetAmmoClass(1).default.PickupClass != None && IsDroppablePickup(W.GetAmmoClass(1).default.PickupClass)) {
                                 Potentials[Potentials.Length] = W.GetAmmoClass(1).default.PickupClass;
                             }
                         }
@@ -110,6 +110,13 @@ function ScoreKill(Controller Killed, class<DamageType> DamageType) {
             }
         }
 	}
+}
+
+//HL2Weapons ammo pickups turn on Karma when dropped, and on a dedicated server that asserts
+//in KSetActorCollision (servercrash.log), so they are never dropped by the looter
+function bool IsDroppablePickup(class<Pickup> P)
+{
+	return Left(string(P), InStr(string(P), ".")) != "HL2Weapons";
 }
 
 defaultproperties {
