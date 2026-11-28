@@ -8,9 +8,7 @@ class Interaction_MonsterLevel extends RPGBaseInteraction;
 var Interaction_Awareness AwarenessInteraction;
 var Color RedColor;
 
-//Refreshed a few times a second; PostRender does not walk the actors every frame
 var array<RPGMonsterLevelInv> MonsterInvs;
-var float NextMonsterScan;
 //Height of the awareness HP text, measured once per frame in PostRender
 var float HPTextH;
 
@@ -71,14 +69,12 @@ function PostRender(Canvas C)
 	if(MonsterFont == None)
 		MonsterFont = C.TinyFont;
 
-	if(ViewportOwner.Actor.Level.TimeSeconds >= NextMonsterScan)
+	//Rebuilt every frame: a cached list keeps monsters and vehicles that were destroyed
+	//since the last refresh, and drawing them crashes the client
+	MonsterInvs.Length = 0;
+	foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
 	{
-		NextMonsterScan = ViewportOwner.Actor.Level.TimeSeconds + 0.25;
-		MonsterInvs.Length = 0;
-		foreach ViewportOwner.Actor.Level.DynamicActors(class'RPGMonsterLevelInv', Inv)
-		{
-			MonsterInvs[MonsterInvs.Length] = Inv;
-		}
+		MonsterInvs[MonsterInvs.Length] = Inv;
 	}
 
 	for(i = 0; i < MonsterInvs.Length; i++)
